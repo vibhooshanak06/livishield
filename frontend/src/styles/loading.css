@@ -1,0 +1,14 @@
+/* Loading component specific styles - using custom blue color palette */
+.loading-spinner-custom {
+  animation: spin 1s linear infinite;
+  color: #00b4d8;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
