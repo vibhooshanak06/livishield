@@ -1,5 +1,3 @@
-const logger = require('../utils/logger');
-
 // Custom error class
 class AppError extends Error {
   constructor(message, statusCode, isOperational = true) {
@@ -51,17 +49,6 @@ const handleMulterError = (err) => {
 
 // Send error response in development
 const sendErrorDev = (err, req, res) => {
-  // Log error
-  logger.error('Development error:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.originalUrl,
-    method: req.method,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    userId: req.user?.id
-  });
-
   return res.status(err.statusCode).json({
     success: false,
     error: err,
@@ -70,7 +57,6 @@ const sendErrorDev = (err, req, res) => {
     request: {
       url: req.originalUrl,
       method: req.method,
-      headers: req.headers,
       body: req.body,
       params: req.params,
       query: req.query
@@ -80,15 +66,6 @@ const sendErrorDev = (err, req, res) => {
 
 // Send error response in production
 const sendErrorProd = (err, req, res) => {
-  // Log error (without sensitive data)
-  logger.error('Production error:', {
-    message: err.message,
-    url: req.originalUrl,
-    method: req.method,
-    ip: req.ip,
-    userId: req.user?.id
-  });
-
   // Operational, trusted error: send message to client
   if (err.isOperational) {
     return res.status(err.statusCode).json({
@@ -98,8 +75,6 @@ const sendErrorProd = (err, req, res) => {
   }
 
   // Programming or other unknown error: don't leak error details
-  logger.error('ERROR 💥', err);
-
   return res.status(500).json({
     success: false,
     message: 'Something went wrong!'
@@ -110,17 +85,6 @@ const sendErrorProd = (err, req, res) => {
 const globalErrorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
-
-  // Log error
-  logger.error('Global error handler:', {
-    message: err.message,
-    stack: err.stack,
-    url: req.originalUrl,
-    method: req.method,
-    ip: req.ip,
-    userAgent: req.get('User-Agent'),
-    userId: req.user?.id
-  });
 
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, req, res);
@@ -135,17 +99,6 @@ const globalErrorHandler = (err, req, res, next) => {
     if (error.name === 'JsonWebTokenError') error = handleJWTError();
     if (error.name === 'TokenExpiredError') error = handleJWTExpiredError();
     if (error.name === 'MulterError') error = handleMulterError(error);
-
-    // MySQL specific errors
-    if (error.code === 'ER_DUP_ENTRY') {
-      error = new AppError('Duplicate entry. This record already exists.', 400);
-    }
-    if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-      error = new AppError('Referenced record does not exist.', 400);
-    }
-    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-      error = new AppError('Cannot delete record as it is referenced by other records.', 400);
-    }
 
     sendErrorProd(error, req, res);
   }
@@ -163,19 +116,6 @@ const notFound = (req, res, next) => {
   const err = new AppError(`Can't find ${req.originalUrl} on this server!`, 404);
   next(err);
 };
-
-// Unhandled promise rejection handler
-process.on('unhandledRejection', (err, promise) => {
-  logger.error('Unhandled Promise Rejection:', err);
-  // Close server & exit process
-  process.exit(1);
-});
-
-// Uncaught exception handler
-process.on('uncaughtException', (err) => {
-  logger.error('Uncaught Exception:', err);
-  process.exit(1);
-});
 
 module.exports = {
   AppError,

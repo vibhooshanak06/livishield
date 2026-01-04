@@ -1,6 +1,5 @@
 const { verifyToken } = require('../utils/helpers');
 const { getConnection } = require('../config/mysql');
-const logger = require('../utils/logger');
 
 // Authentication middleware
 const authenticate = async (req, res, next) => {
@@ -55,8 +54,6 @@ const authenticate = async (req, res, next) => {
 
     next();
   } catch (error) {
-    logger.error('Authentication error:', error);
-    
     if (error.message === 'Invalid token' || error.name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
@@ -157,7 +154,6 @@ const checkOwnership = (resourceIdParam = 'id', userIdField = 'user_id') => {
 
       next();
     } catch (error) {
-      logger.error('Ownership check error:', error);
       return res.status(500).json({
         success: false,
         message: 'Authorization check failed'

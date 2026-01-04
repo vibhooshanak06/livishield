@@ -1,5 +1,4 @@
 const mysql = require('mysql2/promise');
-const logger = require('../utils/logger');
 
 let connection;
 
@@ -18,11 +17,9 @@ const connectMySQL = async () => {
 
     // Test connection
     await connection.execute('SELECT 1');
-    logger.info('✅ MySQL connected successfully');
     
     return connection;
   } catch (error) {
-    logger.error('❌ MySQL connection failed:', error);
     throw error;
   }
 };

@@ -2,12 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
-const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const { globalErrorHandler } = require('./middleware/errorHandler');
-const logger = require('./utils/logger');
 
 // Import only auth routes
 const authRoutes = require('./routes/authRoutes');
@@ -35,13 +33,6 @@ app.use('/api/', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
-
-// Logging
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-} else {
-  app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
-}
 
 // Health check
 app.get('/health', (req, res) => {
