@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signupUser } from "../services/authService";
+import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -11,7 +12,8 @@ import "../styles/signup.css";
 
 const Signup = () => {
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -20,6 +22,7 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleChange = (e) => {
     setFormData({
@@ -30,6 +33,14 @@ const Signup = () => {
   };
 
   const validateForm = () => {
+    if (!formData.firstName.trim()) {
+      setError("First name is required");
+      return false;
+    }
+    if (!formData.lastName.trim()) {
+      setError("Last name is required");
+      return false;
+    }
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return false;
@@ -54,9 +65,9 @@ const Signup = () => {
       const response = await signupUser(signupData);
       
       if (response.success) {
-        navigate("/login", { 
-          state: { message: "Account created successfully! Please sign in." }
-        });
+        // Auto-login after successful registration
+        login(response.data.user);
+        navigate("/dashboard");
       } else {
         setError(response.message || "Signup failed");
       }
@@ -75,15 +86,15 @@ const Signup = () => {
           <div className="flex items-center justify-center mb-4">
             <Shield className="h-12 w-12 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 signup-title-glow">LiveShield</h1>
-          <p className="text-white/80 text-lg">Protect your digital life</p>
+          <h1 className="text-4xl font-bold text-white mb-2 signup-title-glow">LiviShield</h1>
+          <p className="text-white/80 text-lg">Car & Health Insurance Protection</p>
         </div>
         
         <Card className="signup-card-shadow">
           <CardHeader className="text-center">
             <CardTitle className="text-xl font-semibold mb-2">Create Account</CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              Join LiveShield to protect your digital life.
+              Join LiviShield for comprehensive car and health insurance coverage.
             </CardDescription>
           </CardHeader>
           
@@ -96,14 +107,28 @@ const Signup = () => {
               )}
               
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="firstName">First Name</Label>
                 <Input
-                  id="name"
-                  name="name"
+                  id="firstName"
+                  name="firstName"
                   type="text"
-                  value={formData.name}
+                  value={formData.firstName}
                   onChange={handleChange}
-                  placeholder="Enter your full name"
+                  placeholder="Enter your first name"
+                  required
+                  disabled={loading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last Name</Label>
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  placeholder="Enter your last name"
                   required
                   disabled={loading}
                 />

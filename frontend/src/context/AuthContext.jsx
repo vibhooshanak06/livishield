@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { logoutUser } from "../services/authService";
-import { AUTH_ENDPOINTS } from "../utils/constants";
+import { logoutUser, getCurrentUser, getStoredToken, getStoredUser } from "../services/authService";
 
 const AuthContext = createContext();
 
@@ -13,14 +12,21 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch(AUTH_ENDPOINTS.ME, {
-          credentials: "include",
-        });
+        const token = getStoredToken();
+        const storedUser = getStoredUser();
         
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData.user);
-          setIsAuthenticated(true);
+        if (token && storedUser) {
+          // Try to verify token with backend
+          try {
+            const response = await getCurrentUser();
+            if (response.success) {
+              setUser(response.data);
+              setIsAuthenticated(true);
+            }
+          } catch (error) {
+            // Token might be expired, clear storage
+            console.error("Token verification failed:", error);
+          }
         }
       } catch (error) {
         console.error("Auth check failed:", error);

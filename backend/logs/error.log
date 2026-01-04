@@ -1,0 +1,223 @@
+{
+  service: 'livishield-backend',
+  level: 'error',
+  message: 'Failed to start server: connectMySQL is not a function',
+  stack: 'TypeError: connectMySQL is not a function\n' +
+    '    at startServer (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\server.js:16:11)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+  timestamp: '2026-01-04 11:18:00'
+}
+{
+  service: 'livishield-backend',
+  message: "❌ MySQL connection failed: Access denied for user 'root'@'localhost' (using password: NO)",
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  level: 'error',
+  stack: "Error: Access denied for user 'root'@'localhost' (using password: NO)\n" +
+    '    at Object.createConnectionPromise [as createConnection] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\promise.js:19:31)\n' +
+    '    at connectMySQL (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\config\\mysql.js:8:30)\n' +
+    '    at startServer (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\server.js:16:11)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+  timestamp: '2026-01-04 11:19:07'
+}
+{
+  service: 'livishield-backend',
+  message: "❌ MySQL connection failed: Access denied for user 'root'@'localhost' (using password: NO)",
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  level: 'error',
+  stack: "Error: Access denied for user 'root'@'localhost' (using password: NO)\n" +
+    '    at Object.createConnectionPromise [as createConnection] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\promise.js:19:31)\n' +
+    '    at connectMySQL (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\config\\mysql.js:8:30)\n' +
+    '    at startServer (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\server.js:16:11)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+  timestamp: '2026-01-04 11:19:25'
+}
+{
+  service: 'livishield-backend',
+  message: "❌ MySQL connection failed: Access denied for user 'root'@'localhost' (using password: YES)",
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  level: 'error',
+  stack: "Error: Access denied for user 'root'@'localhost' (using password: YES)\n" +
+    '    at Object.createConnectionPromise [as createConnection] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\promise.js:19:31)\n' +
+    '    at connectMySQL (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\config\\mysql.js:8:30)\n' +
+    '    at startServer (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\server.js:17:13)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+  timestamp: '2026-01-04 11:20:49'
+}
+{
+  service: 'livishield-backend',
+  message: "❌ MySQL connection failed: Access denied for user 'root'@'localhost' (using password: YES)",
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  level: 'error',
+  stack: "Error: Access denied for user 'root'@'localhost' (using password: YES)\n" +
+    '    at Object.createConnectionPromise [as createConnection] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\promise.js:19:31)\n' +
+    '    at connectMySQL (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\config\\mysql.js:8:30)\n' +
+    '    at startServer (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\server.js:17:13)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+  timestamp: '2026-01-04 12:08:38'
+}
+{
+  service: 'livishield-backend',
+  message: "❌ MySQL connection failed: Access denied for user 'root'@'localhost' (using password: YES)",
+  code: 'ER_ACCESS_DENIED_ERROR',
+  errno: 1045,
+  sqlState: '28000',
+  level: 'error',
+  stack: "Error: Access denied for user 'root'@'localhost' (using password: YES)\n" +
+    '    at Object.createConnectionPromise [as createConnection] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\promise.js:19:31)\n' +
+    '    at connectMySQL (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\config\\mysql.js:8:30)\n' +
+    '    at startServer (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\server.js:17:13)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+  timestamp: '2026-01-04 12:08:56'
+}
+{
+  service: 'livishield-backend',
+  message: "Login error: Table 'livishield.users' doesn't exist",
+  code: 'ER_NO_SUCH_TABLE',
+  errno: 1146,
+  sql: 'SELECT id, email, password, first_name, last_name, phone, date_of_birth, address, role, is_verified FROM users WHERE email = ?',
+  sqlState: '42S02',
+  sqlMessage: "Table 'livishield.users' doesn't exist",
+  level: 'error',
+  stack: "Error: Table 'livishield.users' doesn't exist\n" +
+    '    at PromiseConnection.execute (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\lib\\promise\\connection.js:47:22)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\controllers\\authController.js:77:38\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\middleware\\errorHandler.js:159:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\utils\\validation.js:161:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at Route.dispatch (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:119:3)\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)',
+  timestamp: '2026-01-04 12:16:09'
+}
+{
+  service: 'livishield-backend',
+  message: "Login error: Table 'livishield.users' doesn't exist",
+  code: 'ER_NO_SUCH_TABLE',
+  errno: 1146,
+  sql: 'SELECT id, email, password, first_name, last_name, phone, date_of_birth, address, role, is_verified FROM users WHERE email = ?',
+  sqlState: '42S02',
+  sqlMessage: "Table 'livishield.users' doesn't exist",
+  level: 'error',
+  stack: "Error: Table 'livishield.users' doesn't exist\n" +
+    '    at PromiseConnection.execute (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\lib\\promise\\connection.js:47:22)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\controllers\\authController.js:77:38\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\middleware\\errorHandler.js:159:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\utils\\validation.js:161:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at Route.dispatch (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:119:3)\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)',
+  timestamp: '2026-01-04 12:16:19'
+}
+{
+  service: 'livishield-backend',
+  message: "Login error: Table 'livishield.users' doesn't exist",
+  code: 'ER_NO_SUCH_TABLE',
+  errno: 1146,
+  sql: 'SELECT id, email, password, first_name, last_name, phone, date_of_birth, address, role, is_verified FROM users WHERE email = ?',
+  sqlState: '42S02',
+  sqlMessage: "Table 'livishield.users' doesn't exist",
+  level: 'error',
+  stack: "Error: Table 'livishield.users' doesn't exist\n" +
+    '    at PromiseConnection.execute (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\lib\\promise\\connection.js:47:22)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\controllers\\authController.js:77:38\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\middleware\\errorHandler.js:159:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\utils\\validation.js:161:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at Route.dispatch (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:119:3)\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)',
+  timestamp: '2026-01-04 12:16:41'
+}
+{
+  service: 'livishield-backend',
+  message: "Registration error: Table 'livishield.users' doesn't exist",
+  code: 'ER_NO_SUCH_TABLE',
+  errno: 1146,
+  sql: 'SELECT id FROM users WHERE email = ?',
+  sqlState: '42S02',
+  sqlMessage: "Table 'livishield.users' doesn't exist",
+  level: 'error',
+  stack: "Error: Table 'livishield.users' doesn't exist\n" +
+    '    at PromiseConnection.execute (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\lib\\promise\\connection.js:47:22)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\controllers\\authController.js:15:46\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\middleware\\errorHandler.js:157:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\utils\\validation.js:86:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at Route.dispatch (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:119:3)\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)',
+  timestamp: '2026-01-04 12:30:17'
+}
+{
+  service: 'livishield-backend',
+  message: "Registration error details: Table 'livishield.users' doesn't exist",
+  stack: "Error: Table 'livishield.users' doesn't exist\n" +
+    '    at PromiseConnection.execute (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\mysql2\\lib\\promise\\connection.js:47:22)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\controllers\\authController.js:17:46\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\middleware\\errorHandler.js:157:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\src\\utils\\validation.js:86:5\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)\n' +
+    '    at next (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:149:13)\n' +
+    '    at Route.dispatch (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\route.js:119:3)\n' +
+    '    at Layer.handle [as handle_request] (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\router\\layer.js:95:5)',
+  code: 'ER_NO_SUCH_TABLE',
+  errno: 1146,
+  sqlState: '42S02',
+  level: 'error',
+  timestamp: '2026-01-04 12:33:14'
+}
+{
+  service: 'livishield-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000,
+  level: 'error',
+  message: 'Uncaught Exception: listen EADDRINUSE: address already in use :::5000',
+  stack: 'Error: listen EADDRINUSE: address already in use :::5000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1939:16)\n' +
+    '    at listenInCluster (node:net:1996:12)\n' +
+    '    at Server.listen (node:net:2101:7)\n' +
+    '    at Function.listen (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\application.js:635:24)\n' +
+    '    at startServer (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\server.js:25:9)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+  timestamp: '2026-01-04 12:44:00'
+}
+{
+  service: 'livishield-backend',
+  code: 'EADDRINUSE',
+  errno: -4091,
+  syscall: 'listen',
+  address: '::',
+  port: 5000,
+  level: 'error',
+  message: 'Uncaught Exception: listen EADDRINUSE: address already in use :::5000',
+  stack: 'Error: listen EADDRINUSE: address already in use :::5000\n' +
+    '    at Server.setupListenHandle [as _listen2] (node:net:1939:16)\n' +
+    '    at listenInCluster (node:net:1996:12)\n' +
+    '    at Server.listen (node:net:2101:7)\n' +
+    '    at Function.listen (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\node_modules\\express\\lib\\application.js:635:24)\n' +
+    '    at startServer (C:\\Users\\vibho\\OneDrive\\Desktop\\livishield\\backend\\server.js:25:9)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)',
+  timestamp: '2026-01-04 12:57:18'
+}

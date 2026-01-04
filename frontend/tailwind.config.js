@@ -18,7 +18,7 @@ export default {
     },
     extend: {
       colors: {
-        // Custom LiveShield blue palette
+        // Custom LiviShield blue palette
         'liveshield': {
           50: '#caf0f8',   // Lightest blue
           100: '#90e0ef',  // Light blue

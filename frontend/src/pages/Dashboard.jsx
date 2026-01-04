@@ -1,9 +1,8 @@
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
-import { Progress } from "../components/ui/progress";
 import { Badge } from "../components/ui/badge";
-import { Shield, Activity, Settings, Scan, LogOut, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Shield, LogOut, User, Mail, Phone, Calendar } from "lucide-react";
 import "../styles/dashboard.css";
 
 const Dashboard = () => {
@@ -19,11 +18,11 @@ const Dashboard = () => {
         <nav className="container flex h-16 items-center justify-between">
           <div className="flex items-center space-x-2">
             <Shield className="h-8 w-8 text-white" />
-            <h1 className="text-2xl font-bold text-white">LiveShield</h1>
-            <Badge className="ml-2 bg-white/20 text-white border-white/30 backdrop-blur-sm">Online</Badge>
+            <h1 className="text-2xl font-bold text-white">LiviShield</h1>
+            <Badge className="ml-2 bg-white/20 text-white border-white/30 backdrop-blur-sm">Authenticated</Badge>
           </div>
           <div className="flex items-center space-x-4">
-            <span className="text-sm text-white/80">Welcome, {user?.name || "User"}!</span>
+            <span className="text-sm text-white/80">Welcome, {user?.firstName || "User"}!</span>
             <Button variant="outline" size="sm" onClick={handleLogout} className="border-white/30 text-white hover:bg-white/10 backdrop-blur-sm">
               <LogOut className="mr-2 h-4 w-4" />
               Sign Out
@@ -34,146 +33,110 @@ const Dashboard = () => {
 
       <main className="container py-6">
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="dashboard-card-hover">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Shield className="h-5 w-5 text-liveshield-200" />
-                  <span>Security Status</span>
-                </div>
-                <Badge className="bg-liveshield-100 text-liveshield-400 border-liveshield-200">Protected</Badge>
-              </CardTitle>
-              <CardDescription>Your system protection overview</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="h-3 w-3 rounded-full status-pulse"></div>
-                <span className="font-medium text-liveshield-300">All Systems Operational</span>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Your devices are actively monitored and protected against threats.
-              </p>
-              <Button className="w-full bg-liveshield-200 hover:bg-liveshield-300 text-white" size="sm">
-                <Scan className="mr-2 h-4 w-4" />
-                Run Full Scan
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="dashboard-card-hover">
+          <Card className="dashboard-card-hover md:col-span-2">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5 text-liveshield-200" />
-                <span>Recent Activity</span>
+                <User className="h-5 w-5 text-liveshield-200" />
+                <span>User Profile</span>
               </CardTitle>
-              <CardDescription>Latest security events</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle className="h-4 w-4 text-liveshield-200" />
-                    <span className="font-medium">System scan completed</span>
-                  </div>
-                  <span className="text-muted-foreground">2 min ago</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-liveshield-100" />
-                    <span className="font-medium">Threat blocked</span>
-                  </div>
-                  <span className="text-muted-foreground">1 hour ago</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-liveshield-300" />
-                    <span className="font-medium">Security update installed</span>
-                  </div>
-                  <span className="text-muted-foreground">3 hours ago</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="dashboard-card-hover">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Settings className="h-5 w-5 text-liveshield-200" />
-                <span>Quick Actions</span>
-              </CardTitle>
-              <CardDescription>Common security tasks</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button className="w-full justify-start bg-liveshield-200 hover:bg-liveshield-300 text-white">
-                  <Scan className="mr-2 h-4 w-4" />
-                  Run Full Scan
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-liveshield-200 text-liveshield-300 hover:bg-liveshield-50">
-                  <Activity className="mr-2 h-4 w-4" />
-                  Update Definitions
-                </Button>
-                <Button variant="outline" className="w-full justify-start border-liveshield-200 text-liveshield-300 hover:bg-liveshield-50">
-                  <Settings className="mr-2 h-4 w-4" />
-                  View Reports
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="dashboard-card-hover">
-            <CardHeader>
-              <CardTitle>System Health</CardTitle>
-              <CardDescription>Resource usage monitoring</CardDescription>
+              <CardDescription>Your account information</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">CPU Usage</span>
-                    <Badge className="bg-liveshield-50 text-liveshield-400 border-liveshield-100">35%</Badge>
+                <div className="flex items-center space-x-3">
+                  <User className="h-4 w-4 text-liveshield-300" />
+                  <div>
+                    <p className="font-medium">{user?.firstName} {user?.lastName}</p>
+                    <p className="text-sm text-muted-foreground">Full Name</p>
                   </div>
-                  <Progress value={35} className="h-2" />
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">Memory</span>
-                    <Badge className="bg-liveshield-100 text-liveshield-400 border-liveshield-200">62%</Badge>
+                
+                <div className="flex items-center space-x-3">
+                  <Mail className="h-4 w-4 text-liveshield-300" />
+                  <div>
+                    <p className="font-medium">{user?.email}</p>
+                    <p className="text-sm text-muted-foreground">Email Address</p>
                   </div>
-                  <Progress value={62} className="h-2" />
                 </div>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">Disk Space</span>
-                    <Badge variant="destructive">78%</Badge>
+
+                {user?.phone && (
+                  <div className="flex items-center space-x-3">
+                    <Phone className="h-4 w-4 text-liveshield-300" />
+                    <div>
+                      <p className="font-medium">{user.phone}</p>
+                      <p className="text-sm text-muted-foreground">Phone Number</p>
+                    </div>
                   </div>
-                  <Progress value={78} className="h-2" />
+                )}
+
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-4 w-4 text-liveshield-300" />
+                  <div>
+                    <p className="font-medium">{user?.role?.charAt(0).toUpperCase() + user?.role?.slice(1)}</p>
+                    <p className="text-sm text-muted-foreground">Account Role</p>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="md:col-span-2 dashboard-card-hover">
+          <Card className="dashboard-card-hover">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Threat Detection</span>
-                <Badge className="bg-liveshield-100 text-liveshield-400 border-liveshield-200">Active</Badge>
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5 text-liveshield-200" />
+                <span>Account Status</span>
               </CardTitle>
-              <CardDescription>Real-time security monitoring</CardDescription>
+              <CardDescription>Your account verification status</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-liveshield-200">0</div>
-                  <div className="text-sm text-muted-foreground">Active Threats</div>
+              <div className="text-center space-y-4">
+                <div className="flex items-center justify-center">
+                  <div className="h-16 w-16 rounded-full bg-liveshield-100 flex items-center justify-center">
+                    <Shield className="h-8 w-8 text-liveshield-400" />
+                  </div>
                 </div>
+                
                 <div>
-                  <div className="text-2xl font-bold text-liveshield-300">247</div>
-                  <div className="text-sm text-muted-foreground">Blocked Today</div>
+                  <Badge className="bg-liveshield-100 text-liveshield-400 border-liveshield-200">
+                    {user?.isVerified ? 'Verified' : 'Pending Verification'}
+                  </Badge>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-liveshield-400">1,432</div>
-                  <div className="text-sm text-muted-foreground">Total Blocked</div>
+                
+                <p className="text-sm text-muted-foreground">
+                  {user?.isVerified 
+                    ? 'Your account is fully verified and active.'
+                    : 'Please check your email to verify your account.'
+                  }
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="mt-8">
+          <Card className="dashboard-card-hover">
+            <CardHeader>
+              <CardTitle>Welcome to LiviShield</CardTitle>
+              <CardDescription>Your authentication system is working perfectly!</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8">
+                <Shield className="h-16 w-16 text-liveshield-200 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Authentication Successful</h3>
+                <p className="text-muted-foreground mb-6">
+                  You have successfully logged into the LiviShield platform. This dashboard demonstrates 
+                  the working authentication and authorization system.
+                </p>
+                <div className="flex justify-center space-x-4">
+                  <Badge variant="outline" className="border-liveshield-200 text-liveshield-300">
+                    JWT Authentication
+                  </Badge>
+                  <Badge variant="outline" className="border-liveshield-200 text-liveshield-300">
+                    MySQL Database
+                  </Badge>
+                  <Badge variant="outline" className="border-liveshield-200 text-liveshield-300">
+                    Secure Routes
+                  </Badge>
                 </div>
               </div>
             </CardContent>
