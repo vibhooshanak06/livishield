@@ -48,7 +48,7 @@ const Login = () => {
       
       if (response.success) {
         login(response.data.user);
-        navigate("/dashboard");
+        navigate("/home");
       } else {
         setError(response.message || "Login failed");
       }
@@ -67,7 +67,7 @@ const Login = () => {
           <div className="flex items-center justify-center mb-4">
             <Shield className="h-12 w-12 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 login-title-glow">LiviShield</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">LiviShield</h1>
           <p className="text-white/80 text-lg">Car & Health Insurance Protection</p>
         </div>
         
