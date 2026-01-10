@@ -100,8 +100,23 @@ backend/
 - `POST /api/auth/logout` - User logout
 - `GET /api/auth/me` - Get current user
 
+### Health Insurance
+- `GET /api/health-insurance/plans` - Get all health insurance plans
+- `GET /api/health-insurance/plans/featured` - Get featured plans
+- `GET /api/health-insurance/plans/:id` - Get plan by ID
+- `POST /api/health-insurance/plans/compare` - Compare multiple plans
+
+### Proposals
+- `POST /api/proposals/submit` - Submit new proposal
+- `GET /api/proposals/user/:userId` - Get user's proposals (paginated)
+- `GET /api/proposals/dashboard/:userId` - Get customer dashboard data
+- `GET /api/proposals/:id` - Get proposal by ID
+- `PUT /api/proposals/:id/status` - Update proposal status (Admin)
+- `GET /api/proposals` - Get all proposals (Admin)
+
 ### Health Check
 - `GET /health` - Server health status
+- `GET /health/db` - Database health status
 
 ## 🛡️ Security Features
 
@@ -126,6 +141,17 @@ backend/
 ### Available Scripts
 - `npm start` - Production server
 - `npm run dev` - Development with nodemon
+
+### Testing the Dashboard Endpoint
+1. **Seed test data**:
+   ```bash
+   node src/utils/seedTestProposals.js your-user-id
+   ```
+
+2. **Test the endpoint**:
+   ```bash
+   node test-dashboard-endpoint.js
+   ```
 
 ### Environment Variables
 ```env

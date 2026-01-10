@@ -22,7 +22,7 @@ const Navbar = () => {
     { name: "About", path: "/about" },
     { name: "Car Insurance", path: "/car-insurance" },
     { name: "Health Insurance", path: "/health-insurance" },
-    { name: "Dashboard", path: "/dashboard" },
+    { name: "Customer Dashboard", path: "/dashboard" },
   ];
 
   const isActiveLink = (path) => location.pathname === path;
@@ -89,7 +89,7 @@ const Navbar = () => {
                     className="block px-4 py-2 text-sm livishield-text-primary hover:livishield-section-light"
                     onClick={() => setIsUserMenuOpen(false)}
                   >
-                    Dashboard
+                    Customer Dashboard
                   </Link>
                   <button
                     onClick={handleLogout}

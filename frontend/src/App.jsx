@@ -5,7 +5,11 @@ import Home from "./pages/Home";
 import About from "./pages/About";
 import CarInsurance from "./pages/CarInsurance";
 import HealthInsurance from "./pages/HealthInsurance";
-import Dashboard from "./pages/Dashboard";
+import HealthInsurancePlans from "./pages/HealthInsurancePlans";
+import HealthInsurancePlanDetails from "./pages/HealthInsurancePlanDetails";
+import HealthInsuranceQuote from "./pages/HealthInsuranceQuote";
+import ProposalSuccess from "./pages/ProposalSuccess";
+import CustomerDashboard from "./pages/CustomerDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -50,10 +54,42 @@ export default function App() {
             }
           />
           <Route
+            path="/health-insurance/plans"
+            element={
+              <ProtectedRoute>
+                <HealthInsurancePlans />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/health-insurance/plan/:id"
+            element={
+              <ProtectedRoute>
+                <HealthInsurancePlanDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/health-insurance/quote/:id"
+            element={
+              <ProtectedRoute>
+                <HealthInsuranceQuote />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/health-insurance/proposal-success"
+            element={
+              <ProtectedRoute>
+                <ProposalSuccess />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
+                <CustomerDashboard />
               </ProtectedRoute>
             }
           />

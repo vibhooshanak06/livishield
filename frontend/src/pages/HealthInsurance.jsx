@@ -1,5 +1,6 @@
 import { memo, useMemo } from "react";
 import Navbar from "../components/Navbar";
+import FeaturedHealthPlans from "../components/FeaturedHealthPlans";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -390,6 +391,9 @@ const HealthInsurance = () => {
           </div>
         </div>
       </section>
+
+      {/* Featured Health Insurance Plans */}
+      <FeaturedHealthPlans />
 
       {/* How Health Insurance Works */}
       <section className="py-16 sm:py-20 livishield-section-light" aria-labelledby="how-it-works">

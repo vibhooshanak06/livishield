@@ -7,8 +7,10 @@ require('dotenv').config();
 
 const { globalErrorHandler } = require('./middleware/errorHandler');
 
-// Import only auth routes
+// Import routes
 const authRoutes = require('./routes/authRoutes');
+const healthInsuranceRoutes = require('./routes/healthInsuranceRoutes');
+const proposalRoutes = require('./routes/proposalRoutes');
 
 const app = express();
 
@@ -72,8 +74,10 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-// API routes - only authentication
+// API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/health-insurance', healthInsuranceRoutes);
+app.use('/api/proposals', proposalRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
