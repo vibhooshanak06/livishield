@@ -381,11 +381,20 @@ const HealthInsuranceQuote = () => {
         }
       };
 
+      // Get authentication token
+      const token = localStorage.getItem('liveshield_token');
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Add authorization header if token exists
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/proposals/submit`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(proposalData),
       });
 

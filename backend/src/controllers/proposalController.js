@@ -16,6 +16,9 @@ const submitProposal = async (req, res) => {
 
     const { planId, personalInfo, familyMembers, medicalInfo, selectedAddOns, premiumDetails } = req.body;
     const userId = req.user?.id || 'guest'; // Get from auth middleware
+    
+    console.log('Proposal submission - User ID:', userId);
+    console.log('Proposal submission - User object:', req.user);
 
     // Verify plan exists
     const plan = await HealthInsurancePlan.findById(planId);
