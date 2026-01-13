@@ -47,21 +47,15 @@ const CustomerDashboard = () => {
       setLoading(true);
       setError(null);
       
-      console.log('User object:', user);
-      console.log('User ID:', user?.id);
-      
       if (!user?.id) {
         throw new Error('User ID not found. Please log in again.');
       }
       
-      console.log('Calling dashboard API with user ID:', user.id);
       const data = await proposalService.getCustomerDashboard(user.id);
       
-      console.log('Dashboard data received:', data);
       setProposals(data.proposals);
       setStats(data.stats);
     } catch (error) {
-      console.error('Error fetching proposals:', error);
       setError(error.message || 'Failed to load dashboard data');
     } finally {
       setLoading(false);

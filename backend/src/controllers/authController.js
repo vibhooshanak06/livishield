@@ -37,11 +37,8 @@ const register = catchAsync(async (req, res) => {
 
   const user = newUser[0];
 
-  // Generate JWT token
-  const token = generateToken({ userId: user.id, email: user.email });
-
-  // Set token in response header
-  res.setHeader('Authorization', `Bearer ${token}`);
+  // Don't generate token for registration - user will login separately
+  // This provides better security and clearer user flow
 
   return successResponse(res, {
     user: {
@@ -55,7 +52,7 @@ const register = catchAsync(async (req, res) => {
       role: user.role,
       isVerified: user.is_verified
     }
-  }, 'User registered successfully', 201);
+  }, 'User registered successfully. Please login to continue.', 201);
 });
 
 // Login user

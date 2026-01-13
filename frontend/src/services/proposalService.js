@@ -28,7 +28,6 @@ class ProposalService {
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Error submitting proposal:', error);
       throw error;
     }
   }
@@ -36,24 +35,17 @@ class ProposalService {
   async getCustomerDashboard(userId) {
     try {
       const url = `${API_BASE_URL}/proposals/dashboard/${userId}`;
-      console.log('Making request to:', url);
       
       const response = await fetch(url);
       
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Error response:', errorData);
         throw new Error(errorData.message || 'Failed to fetch dashboard data');
       }
       
       const data = await response.json();
-      console.log('Success response:', data);
       return data.data;
     } catch (error) {
-      console.error('Error fetching customer dashboard:', error);
       throw error;
     }
   }
@@ -76,7 +68,6 @@ class ProposalService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error fetching user proposals:', error);
       throw error;
     }
   }
@@ -93,7 +84,6 @@ class ProposalService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error fetching proposal details:', error);
       throw error;
     }
   }

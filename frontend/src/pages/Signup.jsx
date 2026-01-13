@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { signupUser } from "../services/authService";
 import { useAuth } from "../context/AuthContext";
@@ -22,7 +22,29 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      navigate("/home", { replace: true });
+    }
+  }, [isAuthenticated, authLoading, navigate]);
+
+  // Show loading while checking auth status
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  // Don't render signup form if already authenticated
+  if (isAuthenticated) {
+    return null;
+  }
 
   const handleChange = (e) => {
     setFormData({
@@ -65,9 +87,12 @@ const Signup = () => {
       const response = await signupUser(signupData);
       
       if (response.success) {
-        // Auto-login after successful registration
-        login(response.data.user);
-        navigate("/home");
+        // Show success message and redirect to login
+        navigate("/login", { 
+          state: { 
+            message: "Account created successfully! Please sign in to continue." 
+          } 
+        });
       } else {
         setError(response.message || "Signup failed");
       }

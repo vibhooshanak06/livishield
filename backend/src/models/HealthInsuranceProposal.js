@@ -217,13 +217,10 @@ healthInsuranceProposalSchema.pre('save', async function(next) {
       
       this.proposalNumber = `HI${year}${month}${String(nextNumber).padStart(4, '0')}`;
       
-      console.log('Generated proposal number:', this.proposalNumber);
     } catch (error) {
-      console.error('Error generating proposal number:', error);
       // Fallback to timestamp-based number if count fails
       const timestamp = Date.now().toString().slice(-6);
       this.proposalNumber = `HI${new Date().getFullYear()}${timestamp}`;
-      console.log('Fallback proposal number:', this.proposalNumber);
     }
   }
   

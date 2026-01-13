@@ -16,12 +16,14 @@ export const loginUser = async (data) => {
       throw new Error(result.message || "Login failed");
     }
 
-    // Get token from response header
+    // Get token from Authorization header only (proper JWT authentication)
     const authHeader = res.headers.get('Authorization');
     if (authHeader && authHeader.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
       localStorage.setItem(STORAGE_KEYS.TOKEN, token);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(result.data.user));
+    } else {
+      throw new Error("Authentication token not received");
     }
     
     return result;
@@ -49,14 +51,7 @@ export const signupUser = async (data) => {
       throw new Error(result.message || "Signup failed");
     }
 
-    // Get token from response header
-    const authHeader = res.headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
-      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(result.data.user));
-    }
-    
+    // Don't store tokens for signup - user will login separately
     return result;
   } catch (error) {
     return {
@@ -116,20 +111,24 @@ export const getCurrentUser = async () => {
       },
     });
 
-    if (!res.ok) {
-      throw new Error("Not authenticated");
-    }
-
     const result = await res.json();
+
+    if (!res.ok) {
+      // Clear invalid token
+      localStorage.removeItem(STORAGE_KEYS.TOKEN);
+      localStorage.removeItem(STORAGE_KEYS.USER);
+      throw new Error(result.message || "Not authenticated");
+    }
     
     if (result.success) {
+      // Update stored user data
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(result.data));
       return result;
     }
     
     throw new Error(result.message || "Failed to get user");
   } catch (error) {
-    // Clear invalid token
+    // Clear invalid token on any error
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER);
     throw error;

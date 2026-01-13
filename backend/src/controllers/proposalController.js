@@ -16,9 +16,6 @@ const submitProposal = async (req, res) => {
 
     const { planId, personalInfo, familyMembers, medicalInfo, selectedAddOns, premiumDetails } = req.body;
     const userId = req.user?.id || 'guest'; // Get from auth middleware
-    
-    console.log('Proposal submission - User ID:', userId);
-    console.log('Proposal submission - User object:', req.user);
 
     // Verify plan exists
     const plan = await HealthInsurancePlan.findById(planId);
@@ -77,9 +74,7 @@ const submitProposal = async (req, res) => {
     // Add required documents based on plan type and conditions
     proposal.requiredDocuments = generateRequiredDocuments(personalInfo, medicalInfo, plan);
 
-    console.log('Saving proposal with number:', proposal.proposalNumber);
     await proposal.save();
-    console.log('Proposal saved successfully:', proposal.proposalNumber);
 
     // Send confirmation email (implement email service)
     // await sendProposalConfirmationEmail(proposal);
@@ -148,12 +143,7 @@ const getUserProposals = async (req, res) => {
 // Get customer dashboard data
 const getCustomerDashboard = async (req, res) => {
   try {
-    console.log('Dashboard endpoint called with params:', req.params);
-    console.log('Dashboard endpoint called with query:', req.query);
-    
     const userId = req.params.userId || req.user?.id || req.query.userId;
-    
-    console.log('Extracted userId:', userId);
     
     if (!userId) {
       return res.status(400).json({
@@ -162,15 +152,11 @@ const getCustomerDashboard = async (req, res) => {
       });
     }
 
-    console.log('Fetching proposals for userId:', userId);
-
     // Get all proposals for the user
     const proposals = await HealthInsuranceProposal.find({ userId })
       .populate('planId', 'name provider type sumInsured')
       .sort({ submittedAt: -1 })
       .lean();
-
-    console.log(`Found ${proposals.length} proposals for user ${userId}`);
 
     // Calculate statistics
     const stats = {
@@ -179,8 +165,6 @@ const getCustomerDashboard = async (req, res) => {
       approvedPolicies: proposals.filter(p => p.status === 'approved' || p.policyDetails?.policyNumber).length,
       pendingDocuments: proposals.filter(p => p.status === 'documents_required').length
     };
-
-    console.log('Calculated stats:', stats);
 
     // Format proposals for frontend
     const formattedProposals = proposals.map(proposal => ({
@@ -199,8 +183,6 @@ const getCustomerDashboard = async (req, res) => {
       statusHistory: proposal.statusHistory || []
     }));
 
-    console.log('Sending response with formatted proposals');
-
     res.status(200).json({
       success: true,
       data: {
@@ -209,7 +191,6 @@ const getCustomerDashboard = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching customer dashboard data:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching dashboard data',

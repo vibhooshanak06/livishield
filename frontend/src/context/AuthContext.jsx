@@ -16,20 +16,39 @@ export const AuthProvider = ({ children }) => {
         const storedUser = getStoredUser();
         
         if (token && storedUser) {
-          // Try to verify token with backend
+          // First set the user from localStorage to avoid flash
+          setUser(storedUser);
+          setIsAuthenticated(true);
+          
+          // Then verify token with backend
           try {
             const response = await getCurrentUser();
             if (response.success) {
+              // Update user data from server
               setUser(response.data);
               setIsAuthenticated(true);
+            } else {
+              // Token is invalid, clear everything
+              localStorage.removeItem('liveshield_token');
+              localStorage.removeItem('liveshield_user');
+              setUser(null);
+              setIsAuthenticated(false);
             }
           } catch (error) {
             // Token might be expired, clear storage
-            console.error("Token verification failed:", error);
+            localStorage.removeItem('liveshield_token');
+            localStorage.removeItem('liveshield_user');
+            setUser(null);
+            setIsAuthenticated(false);
           }
+        } else {
+          // No token or user data found
+          setIsAuthenticated(false);
+          setUser(null);
         }
       } catch (error) {
-        console.error("Auth check failed:", error);
+        setIsAuthenticated(false);
+        setUser(null);
       } finally {
         setLoading(false);
       }
