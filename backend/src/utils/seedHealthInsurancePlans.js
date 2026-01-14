@@ -435,17 +435,13 @@ healthInsurancePlans.push(
 const seedHealthInsurancePlans = async () => {
   try {
     await connectMongoDB();
-    console.log('Connected to MongoDB');
+
 
     // Clear existing plans
     await HealthInsurancePlan.deleteMany({});
-    console.log('Cleared existing health insurance plans');
-
+  
     // Insert new plans
     const insertedPlans = await HealthInsurancePlan.insertMany(healthInsurancePlans);
-    console.log(`Successfully inserted ${insertedPlans.length} health insurance plans`);
-
-    console.log('Health Insurance Plans seeded successfully!');
     process.exit(0);
   } catch (error) {
     console.error('Error seeding health insurance plans:', error);
