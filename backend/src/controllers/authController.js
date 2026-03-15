@@ -143,33 +143,9 @@ const getCurrentUser = catchAsync(async (req, res) => {
   }, 'User details retrieved successfully');
 });
 
-// Forgot password (placeholder)
-const forgotPassword = catchAsync(async (req, res) => {
-  return errorResponse(res, 'Forgot password feature not implemented yet', 501);
-});
-
-// Reset password (placeholder)
-const resetPassword = catchAsync(async (req, res) => {
-  return errorResponse(res, 'Reset password feature not implemented yet', 501);
-});
-
-// Verify email (placeholder)
-const verifyEmail = catchAsync(async (req, res) => {
-  return errorResponse(res, 'Email verification feature not implemented yet', 501);
-});
-
-// Refresh token (placeholder)
-const refreshToken = catchAsync(async (req, res) => {
-  return errorResponse(res, 'Refresh token feature not implemented yet', 501);
-});
-
 module.exports = {
   register,
   login,
   logout,
-  getCurrentUser,
-  forgotPassword,
-  resetPassword,
-  verifyEmail,
-  refreshToken
+  getCurrentUser
 };

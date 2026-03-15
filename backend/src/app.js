@@ -54,7 +54,7 @@ app.get('/health', (req, res) => {
 // Database health check
 app.get('/health/db', async (req, res) => {
   try {
-    const { getConnection } = require('./src/config/mysql');
+    const { getConnection } = require('./config/mysql');
     const connection = getConnection();
     
     // Test MySQL connection

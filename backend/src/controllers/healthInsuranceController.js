@@ -1,5 +1,4 @@
 const HealthInsurancePlan = require('../models/HealthInsurancePlan');
-const { validationResult } = require('express-validator');
 
 // Get all health insurance plans with filtering and pagination
 const getHealthInsurancePlans = async (req, res) => {

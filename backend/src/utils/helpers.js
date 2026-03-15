@@ -39,21 +39,6 @@ const generateOTP = (length = 6) => {
   return otp;
 };
 
-// Policy number generation
-const generatePolicyNumber = (planType = 'GEN') => {
-  const year = new Date().getFullYear();
-  const month = String(new Date().getMonth() + 1).padStart(2, '0');
-  const random = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
-  return `${planType}${year}${month}${random}`;
-};
-
-// Transaction ID generation
-const generateTransactionId = () => {
-  const timestamp = Date.now().toString();
-  const random = Math.floor(Math.random() * 999999).toString().padStart(6, '0');
-  return `TXN${timestamp}${random}`;
-};
-
 // Date utilities
 const formatDate = (date, format = 'YYYY-MM-DD') => {
   const d = new Date(date);
@@ -232,8 +217,6 @@ module.exports = {
   comparePassword,
   generateRandomString,
   generateOTP,
-  generatePolicyNumber,
-  generateTransactionId,
   formatDate,
   addDays,
   addMonths,

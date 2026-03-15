@@ -126,80 +126,8 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
-// Check if user owns resource
-const checkOwnership = (resourceIdParam = 'id', userIdField = 'user_id') => {
-  return async (req, res, next) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({
-          success: false,
-          message: 'Authentication required'
-        });
-      }
-
-      // Admin can access all resources
-      if (req.user.role === 'admin') {
-        return next();
-      }
-
-      const resourceId = req.params[resourceIdParam];
-      
-      // This is a generic ownership check - specific implementations
-      // should be done in individual route handlers
-      req.checkOwnership = {
-        userId: req.user.id,
-        resourceId,
-        userIdField
-      };
-
-      next();
-    } catch (error) {
-      return res.status(500).json({
-        success: false,
-        message: 'Authorization check failed'
-      });
-    }
-  };
-};
-
-// Rate limiting per user
-const userRateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
-  const userRequests = new Map();
-
-  return (req, res, next) => {
-    const userId = req.user?.id || req.ip;
-    const now = Date.now();
-    const windowStart = now - windowMs;
-
-    // Clean old entries
-    if (userRequests.has(userId)) {
-      const requests = userRequests.get(userId).filter(time => time > windowStart);
-      userRequests.set(userId, requests);
-    } else {
-      userRequests.set(userId, []);
-    }
-
-    const requests = userRequests.get(userId);
-
-    if (requests.length >= maxRequests) {
-      return res.status(429).json({
-        success: false,
-        message: 'Too many requests, please try again later',
-        retryAfter: Math.ceil(windowMs / 1000)
-      });
-    }
-
-    requests.push(now);
-    userRequests.set(userId, requests);
-
-    next();
-  };
-};
-
 module.exports = {
   authenticate,
   authorize,
-  optionalAuth,
-  checkOwnership,
-  userRateLimit
+  optionalAuth
 };

@@ -1,21 +1,11 @@
 const HealthInsuranceProposal = require('../models/HealthInsuranceProposal');
 const HealthInsurancePlan = require('../models/HealthInsurancePlan');
-const { validationResult } = require('express-validator');
 
 // Submit a new proposal
 const submitProposal = async (req, res) => {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation errors',
-        errors: errors.array()
-      });
-    }
-
     const { planId, personalInfo, familyMembers, medicalInfo, selectedAddOns, premiumDetails } = req.body;
-    const userId = req.user?.id || 'guest'; // Get from auth middleware
+    const userId = req.user?.id || 'guest';
 
     // Verify plan exists
     const plan = await HealthInsurancePlan.findById(planId);
@@ -25,38 +15,8 @@ const submitProposal = async (req, res) => {
         message: 'Health insurance plan not found'
       });
     }
-
-    // Generate proposal number manually as backup
-    const generateProposalNumber = async () => {
-      try {
-        const year = new Date().getFullYear();
-        const month = String(new Date().getMonth() + 1).padStart(2, '0');
-        
-        // Get the latest proposal number for this month to ensure uniqueness
-        const latestProposal = await HealthInsuranceProposal.findOne({
-          proposalNumber: new RegExp(`^HI${year}${month}`)
-        }).sort({ proposalNumber: -1 });
-        
-        let nextNumber = 1;
-        if (latestProposal && latestProposal.proposalNumber) {
-          const lastNumber = parseInt(latestProposal.proposalNumber.slice(-4));
-          nextNumber = lastNumber + 1;
-        }
-        
-        return `HI${year}${month}${String(nextNumber).padStart(4, '0')}`;
-      } catch (error) {
-        console.error('Error generating proposal number:', error);
-        // Fallback to timestamp-based number
-        const timestamp = Date.now().toString().slice(-6);
-        return `HI${new Date().getFullYear()}${timestamp}`;
-      }
-    };
-
-    // Create proposal with generated proposal number
-    const proposalNumber = await generateProposalNumber();
     
     const proposal = new HealthInsuranceProposal({
-      proposalNumber,
       planId,
       userId,
       personalInfo,
@@ -76,9 +36,6 @@ const submitProposal = async (req, res) => {
 
     await proposal.save();
 
-    // Send confirmation email (implement email service)
-    // await sendProposalConfirmationEmail(proposal);
-
     res.status(201).json({
       success: true,
       message: 'Proposal submitted successfully',
@@ -90,7 +47,6 @@ const submitProposal = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error submitting proposal:', error);
     res.status(500).json({
       success: false,
       message: 'Error submitting proposal',
@@ -131,7 +87,6 @@ const getUserProposals = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching user proposals:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching proposals',
@@ -229,7 +184,6 @@ const getProposalById = async (req, res) => {
       data: proposal
     });
   } catch (error) {
-    console.error('Error fetching proposal:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching proposal',
@@ -288,9 +242,6 @@ const updateProposalStatus = async (req, res) => {
 
     await proposal.save();
 
-    // Send notification email to customer
-    // await sendStatusUpdateEmail(proposal);
-
     res.status(200).json({
       success: true,
       message: 'Proposal status updated successfully',
@@ -300,7 +251,6 @@ const updateProposalStatus = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error updating proposal status:', error);
     res.status(500).json({
       success: false,
       message: 'Error updating proposal status',
@@ -372,7 +322,6 @@ const getAllProposals = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching all proposals:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching proposals',
@@ -411,7 +360,6 @@ const addCommunication = async (req, res) => {
       message: 'Communication logged successfully'
     });
   } catch (error) {
-    console.error('Error adding communication:', error);
     res.status(500).json({
       success: false,
       message: 'Error adding communication',
