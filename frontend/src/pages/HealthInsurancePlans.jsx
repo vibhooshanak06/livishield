@@ -10,7 +10,6 @@ import {
   Star,
   Users,
   Shield,
-  Clock,
   ArrowRight,
   Filter,
   Search,
@@ -75,7 +74,6 @@ const HealthInsurancePlans = () => {
       setPagination(data.pagination);
     } catch (err) {
       setError('Failed to fetch health insurance plans');
-      console.error(err);
     } finally {
       setLoading(false);
     }

@@ -10,7 +10,6 @@ class HealthInsuranceService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error fetching featured plans:', error);
       throw error;
     }
   }
@@ -32,7 +31,6 @@ class HealthInsuranceService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error fetching health insurance plans:', error);
       throw error;
     }
   }
@@ -46,7 +44,6 @@ class HealthInsuranceService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error fetching plan details:', error);
       throw error;
     }
   }
@@ -66,7 +63,6 @@ class HealthInsuranceService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error comparing plans:', error);
       throw error;
     }
   }
@@ -80,7 +76,6 @@ class HealthInsuranceService {
       const data = await response.json();
       return data.data;
     } catch (error) {
-      console.error('Error fetching plan statistics:', error);
       throw error;
     }
   }

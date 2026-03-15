@@ -24,7 +24,6 @@ import {
 import healthInsuranceService from '../services/healthInsuranceService';
 import '../styles/theme.css';
 
-// Add custom styles for form validation
 const customStyles = `
   .error-field {
     animation: shake 0.5s ease-in-out;
@@ -114,7 +113,6 @@ const HealthInsuranceQuote = () => {
       setPlan(data);
     } catch (err) {
       setError('Failed to fetch plan details');
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -414,7 +412,6 @@ const HealthInsuranceQuote = () => {
         alert('Error submitting proposal: ' + result.message);
       }
     } catch (error) {
-      console.error('Error submitting proposal:', error);
       alert('Error submitting proposal. Please try again.');
     } finally {
       setIsSubmitting(false);

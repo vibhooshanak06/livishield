@@ -14,9 +14,6 @@ import {
   ArrowRight,
   ArrowLeft,
   Phone,
-  Mail,
-  MapPin,
-  Calendar,
   DollarSign,
   AlertCircle,
   Info,
@@ -44,7 +41,6 @@ const HealthInsurancePlanDetails = () => {
       setPlan(data);
     } catch (err) {
       setError('Failed to fetch plan details');
-      console.error(err);
     } finally {
       setLoading(false);
     }

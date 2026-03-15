@@ -31,7 +31,6 @@ const FeaturedHealthPlans = () => {
       setPlans(data);
     } catch (err) {
       setError('Failed to fetch featured plans');
-      console.error(err);
     } finally {
       setLoading(false);
     }

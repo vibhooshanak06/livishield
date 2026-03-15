@@ -12,11 +12,9 @@ import {
   Mail,
   Calendar,
   ArrowRight,
-  Download,
   Clock,
   AlertCircle,
-  User,
-  CreditCard
+  User
 } from 'lucide-react';
 import '../styles/theme.css';
 
