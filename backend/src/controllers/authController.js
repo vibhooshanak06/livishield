@@ -1,6 +1,5 @@
 const { getConnection } = require('../config/mysql');
-const { hashPassword, comparePassword, generateToken } = require('../utils/helpers');
-const { successResponse, errorResponse } = require('../utils/helpers');
+const { hashPassword, comparePassword, generateToken, successResponse, errorResponse } = require('../utils/helpers');
 const { catchAsync } = require('../middleware/errorHandler');
 
 // Register new user

@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import Navbar from "../components/Navbar";
 import FeaturedHealthPlans from "../components/FeaturedHealthPlans";
 import { Button } from "../components/ui/button";
@@ -299,18 +299,13 @@ const ProcessStep = memo(({ item }) => (
 ));
 
 const HealthInsurance = () => {
-  // Memoize expensive calculations for better performance
-  const benefitCircles = useMemo(() => 
-    HEALTH_INSURANCE_DATA.benefits.map((benefit, index) => (
-      <CircularBenefit key={benefit.title} benefit={benefit} index={index} />
-    )), []
-  );
+  const benefitCircles = HEALTH_INSURANCE_DATA.benefits.map((benefit, index) => (
+    <CircularBenefit key={benefit.title} benefit={benefit} index={index} />
+  ));
 
-  const exclusionCircles = useMemo(() => 
-    HEALTH_INSURANCE_DATA.exclusions.map((exclusion, index) => (
-      <CircularExclusion key={exclusion.title} exclusion={exclusion} index={index} />
-    )), []
-  );
+  const exclusionCircles = HEALTH_INSURANCE_DATA.exclusions.map((exclusion, index) => (
+    <CircularExclusion key={exclusion.title} exclusion={exclusion} index={index} />
+  ));
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -524,7 +519,7 @@ const HealthInsurance = () => {
           </div>
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {HEALTH_INSURANCE_DATA.processSteps.map((item, index) => (
+            {HEALTH_INSURANCE_DATA.processSteps.map((item) => (
               <ProcessStep key={item.step} item={item} />
             ))}
           </div>

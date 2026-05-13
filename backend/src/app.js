@@ -22,7 +22,7 @@ app.use(helmet({
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
     ? ['https://yourdomain.com'] 
-    : ['http://localhost:3000', 'http://localhost:5173'],
+    : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
   exposedHeaders: ['Authorization', 'Content-Type'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
