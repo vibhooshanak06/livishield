@@ -6,9 +6,10 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import proposalService from '../services/proposalService';
+import paymentService from '../services/paymentService';
 import {
   FileText, Clock, CheckCircle, AlertCircle, Eye,
-  Upload, Shield, Bell, Settings, CreditCard
+  Upload, Shield, Bell, Settings, CreditCard, BadgeCheck
 } from 'lucide-react';
 import '../styles/theme.css';
 
@@ -17,6 +18,7 @@ const CustomerDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('proposals');
   const [proposals, setProposals] = useState([]);
+  const [payments,  setPayments]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({

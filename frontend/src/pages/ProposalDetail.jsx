@@ -7,7 +7,7 @@ import { Badge } from '../components/ui/badge';
 import {
   ArrowLeft, CheckCircle, XCircle, AlertCircle, FileText,
   Shield, Clock, User, MapPin, Heart, Stethoscope,
-  BadgeCheck, Copy, Loader2, Phone, Mail, Calendar
+  BadgeCheck, Copy, Loader2, Mail, CreditCard
 } from 'lucide-react';
 import proposalService from '../services/proposalService';
 import '../styles/theme.css';
@@ -159,11 +159,36 @@ const ProposalDetail = () => {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
         {/* ── Status banners ── */}
-        {policy && proposal.status === 'approved' && (
+
+        {/* Pay Now — approved but not yet paid */}
+        {proposal.status === 'approved' && proposal.payment_status !== 'paid' && proposal.status !== 'policy_issued' && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="p-2 bg-amber-100 rounded-lg shrink-0">
+                <CreditCard className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-amber-800">Action Required — Pay Your Premium</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Your proposal is approved. Pay <span className="font-bold">{proposalService.formatCurrency(parseJSON(proposal.premium_details, {}).totalAnnualPremium || 0)}</span> to activate your policy.
+                </p>
+              </div>
+            </div>
+            <Button
+              className="livishield-btn-primary gap-2 shrink-0"
+              onClick={() => navigate(`/proposals/${id}/pay`)}
+            >
+              <CreditCard className="h-4 w-4" />Pay Now
+            </Button>
+          </div>
+        )}
+
+        {/* Policy already issued */}
+        {(proposal.status === 'policy_issued' || proposal.payment_status === 'paid') && policy && (
           <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl p-4">
             <div className="p-2 bg-green-100 rounded-lg shrink-0"><Shield className="h-5 w-5 text-green-600" /></div>
             <div className="flex-1">
-              <p className="text-sm font-semibold text-green-800">Policy Issued Successfully</p>
+              <p className="text-sm font-semibold text-green-800">Policy Active — Premium Paid</p>
               <p className="text-xs text-green-700 mt-0.5">
                 Policy No: <span className="font-mono font-bold">{policy.policyNumber}</span>
                 {' · '}Valid: {proposalService.formatDate(policy.policyStartDate)} – {proposalService.formatDate(policy.policyEndDate)}

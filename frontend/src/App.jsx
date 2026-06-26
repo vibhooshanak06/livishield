@@ -9,6 +9,8 @@ import HealthInsurancePlanDetails from "./pages/HealthInsurancePlanDetails";
 import HealthInsuranceQuote from "./pages/HealthInsuranceQuote";
 import ProposalSuccess from "./pages/ProposalSuccess";
 import ProposalDetail from "./pages/ProposalDetail";
+import PaymentPage from "./pages/PaymentPage";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import Profile from "./pages/Profile";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -50,6 +52,8 @@ export default function App() {
           <Route path="/health-insurance/quote/:id"        element={<ProtectedRoute><HealthInsuranceQuote /></ProtectedRoute>} />
           <Route path="/health-insurance/proposal-success" element={<ProtectedRoute><ProposalSuccess /></ProtectedRoute>} />
           <Route path="/proposals/:id"                     element={<ProtectedRoute><ProposalDetail /></ProtectedRoute>} />
+          <Route path="/proposals/:proposalId/pay"         element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+          <Route path="/payment-success"                   element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
           <Route path="/dashboard"                         element={<ProtectedRoute><CustomerDashboard /></ProtectedRoute>} />
           <Route path="/profile"                           element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 

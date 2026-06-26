@@ -10,10 +10,11 @@ require('dotenv').config();
 const { globalErrorHandler } = require('./middleware/errorHandler');
 
 // ── Module routes (feature-based architecture) ────────────────
-const authRoutes           = require('./modules/auth');
+const authRoutes            = require('./modules/auth');
 const healthInsuranceRoutes = require('./modules/health-insurance');
-const proposalRoutes       = require('./modules/proposal');
-const adminRoutes          = require('./modules/admin');
+const proposalRoutes        = require('./modules/proposal');
+const adminRoutes           = require('./modules/admin');
+const paymentRoutes         = require('./modules/payment');
 
 const app = express();
 
@@ -35,6 +36,12 @@ app.use(rateLimit({
   max:      process.env.RATE_LIMIT_MAX || 100,
   message:  'Too many requests from this IP, please try again later.',
 }));
+
+// ── Webhook needs raw body BEFORE json parser ────────────────
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }), (req, _res, next) => {
+  req.rawBody = req.body.toString('utf8');
+  next();
+});
 
 // ── Parsing & compression ─────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
@@ -68,6 +75,7 @@ app.use('/api/auth',             authRoutes);
 app.use('/api/health-insurance', healthInsuranceRoutes);
 app.use('/api/proposals',        proposalRoutes);
 app.use('/api/admin',            adminRoutes);
+app.use('/api/payments',         paymentRoutes);
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use('*', (_req, res) =>
