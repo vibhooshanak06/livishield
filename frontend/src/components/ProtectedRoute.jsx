@@ -1,11 +1,10 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Loader2 } from "lucide-react";
-import "../styles/loading.css";
 
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAuth();
-  
+  const { isAuthenticated, user, loading } = useAuth();
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
@@ -14,8 +13,13 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
-  
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  // Admins have no business on customer pages — send them to their panel
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
+
+  return children;
 };
 
 export default ProtectedRoute;

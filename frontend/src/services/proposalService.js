@@ -36,7 +36,9 @@ class ProposalService {
     try {
       const url = `${API_BASE_URL}/proposals/dashboard/${userId}`;
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: this.getAuthHeaders(),
+      });
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -74,7 +76,9 @@ class ProposalService {
 
   async getProposalById(proposalId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/proposals/${proposalId}`);
+      const response = await fetch(`${API_BASE_URL}/proposals/${proposalId}`, {
+        headers: this.getAuthHeaders(),
+      });
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -109,6 +113,7 @@ class ProposalService {
       'submitted': 'Submitted',
       'under_review': 'Under Review',
       'documents_required': 'Documents Required',
+      'documents_expired': 'Documents Expired',
       'medical_checkup_required': 'Medical Checkup Required',
       'approved': 'Approved',
       'rejected': 'Rejected',
@@ -116,6 +121,78 @@ class ProposalService {
       'cancelled': 'Cancelled'
     };
     return statusMap[status] || status;
+  }
+
+  getAuthHeaders(contentType = 'application/json') {
+    const token = localStorage.getItem('liveshield_token');
+    const headers = {};
+    if (contentType) headers['Content-Type'] = contentType;
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  }
+
+  /**
+   * Upload a single document file for a proposal.
+   * @param {string} proposalId
+   * @param {string} docType  - matches required_documents[].type
+   * @param {File}   file
+   * @param {function} onProgress - optional (loaded, total) callback
+   */
+  uploadDocument(proposalId, docType, file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('docType', docType);
+
+      const token = localStorage.getItem('liveshield_token');
+      const xhr = new XMLHttpRequest();
+
+      if (onProgress) {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable) onProgress(e.loaded, e.total);
+        });
+      }
+
+      xhr.addEventListener('load', () => {
+        try {
+          const result = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && result.success) {
+            resolve(result);
+          } else {
+            reject(new Error(result.message || 'Upload failed'));
+          }
+        } catch {
+          reject(new Error('Invalid server response'));
+        }
+      });
+
+      xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
+      xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')));
+
+      xhr.open('POST', `${API_BASE_URL}/proposals/${proposalId}/documents`);
+      if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
+    });
+  }
+
+  async deleteDocument(proposalId, docType) {
+    const res = await fetch(`${API_BASE_URL}/proposals/${proposalId}/documents/${docType}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders()
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Failed to remove document');
+    return data;
+  }
+
+  async submitDocuments(proposalId) {
+    const res = await fetch(`${API_BASE_URL}/proposals/${proposalId}/documents/submit`, {
+      method: 'POST',
+      headers: this.getAuthHeaders()
+    });
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Failed to submit documents');
+    return data;
   }
 }
 

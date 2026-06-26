@@ -1,5 +1,11 @@
 const { getConnection } = require('../config/mysql');
 
+const parseJSON = (val, fallback) => {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'object') return val;
+  try { return JSON.parse(val); } catch { return fallback; }
+};
+
 // Helper to map DB row to API shape
 const mapPlan = (row) => ({
   _id: row.id,
@@ -17,14 +23,14 @@ const mapPlan = (row) => ({
   popular: !!row.popular,
   recommended: !!row.recommended,
   status: row.status,
-  features: row.features || [],
-  coverage: row.coverage || {},
-  waitingPeriods: row.waiting_periods || {},
-  coPayment: row.copayment || {},
-  subLimits: row.sub_limits || [],
-  addOns: row.add_ons || [],
-  benefits: row.benefits || [],
-  exclusions: row.exclusions || [],
+  features:      parseJSON(row.features, []),
+  coverage:      parseJSON(row.coverage, {}),
+  waitingPeriods: parseJSON(row.waiting_periods, {}),
+  coPayment:     parseJSON(row.copayment, {}),
+  subLimits:     parseJSON(row.sub_limits, []),
+  addOns:        parseJSON(row.add_ons, []),
+  benefits:      parseJSON(row.benefits, []),
+  exclusions:    parseJSON(row.exclusions, []),
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });

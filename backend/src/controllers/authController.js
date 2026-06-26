@@ -142,9 +142,66 @@ const getCurrentUser = catchAsync(async (req, res) => {
   }, 'User details retrieved successfully');
 });
 
+// Update profile
+const updateProfile = catchAsync(async (req, res) => {
+  const { firstName, lastName, phone, dateOfBirth, address } = req.body;
+  const connection = getConnection();
+
+  if (!firstName || !lastName) {
+    return errorResponse(res, 'First name and last name are required', 400);
+  }
+
+  await connection.execute(
+    `UPDATE users SET first_name = ?, last_name = ?, phone = ?, date_of_birth = ?, address = ?
+     WHERE id = ?`,
+    [firstName, lastName, phone || null, dateOfBirth || null, address || null, req.user.id]
+  );
+
+  const [users] = await connection.execute(
+    'SELECT id, email, first_name, last_name, phone, date_of_birth, address, role, is_verified, created_at FROM users WHERE id = ?',
+    [req.user.id]
+  );
+  const u = users[0];
+
+  return successResponse(res, {
+    id: u.id, email: u.email,
+    firstName: u.first_name, lastName: u.last_name,
+    phone: u.phone, dateOfBirth: u.date_of_birth,
+    address: u.address, role: u.role,
+    isVerified: u.is_verified, createdAt: u.created_at,
+  }, 'Profile updated successfully');
+});
+
+// Change password
+const changePassword = catchAsync(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return errorResponse(res, 'Current password and new password are required', 400);
+  }
+  if (newPassword.length < 8) {
+    return errorResponse(res, 'New password must be at least 8 characters', 400);
+  }
+
+  const connection = getConnection();
+  const [users] = await connection.execute(
+    'SELECT id, password FROM users WHERE id = ?', [req.user.id]
+  );
+  if (!users.length) return errorResponse(res, 'User not found', 404);
+
+  const valid = await comparePassword(currentPassword, users[0].password);
+  if (!valid) return errorResponse(res, 'Current password is incorrect', 401);
+
+  const hashed = await hashPassword(newPassword);
+  await connection.execute('UPDATE users SET password = ? WHERE id = ?', [hashed, req.user.id]);
+
+  return successResponse(res, null, 'Password changed successfully');
+});
+
 module.exports = {
   register,
   login,
   logout,
-  getCurrentUser
+  getCurrentUser,
+  updateProfile,
+  changePassword,
 };

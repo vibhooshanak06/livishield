@@ -34,7 +34,7 @@ const HealthInsurancePlans = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('premium.annual');
+  const [sortBy, setSortBy] = useState('premium_annual');
   const [sortOrder, setSortOrder] = useState('asc');
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -44,31 +44,38 @@ const HealthInsurancePlans = () => {
 
   const navigate = useNavigate();
 
+  // currentPage lives in a separate state so we can track it cleanly
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Debounce search → update provider filter
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFilters(prev => {
+        if (prev.provider === searchTerm) return prev;
+        return { ...prev, provider: searchTerm };
+      });
+      setCurrentPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch whenever filters / sort / page change
   useEffect(() => {
     fetchPlans();
-  }, [filters, sortBy, sortOrder, pagination.currentPage, searchTerm]);
-
-  useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      if (searchTerm !== filters.provider) {
-        handleFilterChange('provider', searchTerm);
-      }
-    }, 500);
-
-    return () => clearTimeout(delayedSearch);
-  }, [searchTerm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, sortBy, sortOrder, currentPage]);
 
   const fetchPlans = async () => {
     try {
       setLoading(true);
+      setError(null);
       const queryFilters = {
         ...filters,
-        page: pagination.currentPage,
+        page: currentPage,
         limit: 12,
         sortBy,
-        sortOrder
+        sortOrder,
       };
-
       const data = await healthInsuranceService.getAllPlans(queryFilters);
       setPlans(data.plans);
       setPagination(data.pagination);
@@ -84,7 +91,7 @@ const HealthInsurancePlans = () => {
       ...prev,
       [key]: value
     }));
-    setPagination(prev => ({ ...prev, currentPage: 1 }));
+    setCurrentPage(1);
   };
 
   const clearFilters = () => {
@@ -99,10 +106,11 @@ const HealthInsurancePlans = () => {
       recommended: false
     });
     setSearchTerm('');
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page) => {
-    setPagination(prev => ({ ...prev, currentPage: page }));
+    setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -320,12 +328,13 @@ const HealthInsurancePlans = () => {
                         const [field, order] = e.target.value.split('-');
                         setSortBy(field);
                         setSortOrder(order);
+                        setCurrentPage(1);
                       }}
                       className="w-full p-2 border border-gray-300 rounded-lg"
                     >
-                      <option value="premium.annual-asc">Premium: Low to High</option>
-                      <option value="premium.annual-desc">Premium: High to Low</option>
-                      <option value="sumInsured-desc">Sum Insured: High to Low</option>
+                      <option value="premium_annual-asc">Premium: Low to High</option>
+                      <option value="premium_annual-desc">Premium: High to Low</option>
+                      <option value="sum_insured-desc">Sum Insured: High to Low</option>
                       <option value="rating-desc">Rating: High to Low</option>
                     </select>
                   </div>
@@ -370,7 +379,7 @@ const HealthInsurancePlans = () => {
               {pagination.totalPlans} Health Insurance Plans Found
             </h2>
             <p className="text-sm livishield-text-secondary">
-              Showing {((pagination.currentPage - 1) * 12) + 1} - {Math.min(pagination.currentPage * 12, pagination.totalPlans)} of {pagination.totalPlans} plans
+              Showing {((currentPage - 1) * 12) + 1} - {Math.min(currentPage * 12, pagination.totalPlans)} of {pagination.totalPlans} plans
             </p>
           </div>
         </div>
@@ -408,7 +417,7 @@ const HealthInsurancePlans = () => {
             <Button
               variant="outline"
               disabled={!pagination.hasPrev}
-              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              onClick={() => handlePageChange(currentPage - 1)}
             >
               Previous
             </Button>
@@ -418,21 +427,21 @@ const HealthInsurancePlans = () => {
               if (
                 page === 1 ||
                 page === pagination.totalPages ||
-                (page >= pagination.currentPage - 1 && page <= pagination.currentPage + 1)
+                (page >= currentPage - 1 && page <= currentPage + 1)
               ) {
                 return (
                   <Button
                     key={page}
-                    variant={page === pagination.currentPage ? "default" : "outline"}
+                    variant={page === currentPage ? "default" : "outline"}
                     onClick={() => handlePageChange(page)}
-                    className={page === pagination.currentPage ? "livishield-btn-primary" : ""}
+                    className={page === currentPage ? "livishield-btn-primary" : ""}
                   >
                     {page}
                   </Button>
                 );
               } else if (
-                page === pagination.currentPage - 2 ||
-                page === pagination.currentPage + 2
+                page === currentPage - 2 ||
+                page === currentPage + 2
               ) {
                 return <span key={page} className="px-2">...</span>;
               }
@@ -442,7 +451,7 @@ const HealthInsurancePlans = () => {
             <Button
               variant="outline"
               disabled={!pagination.hasNext}
-              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              onClick={() => handlePageChange(currentPage + 1)}
             >
               Next
             </Button>

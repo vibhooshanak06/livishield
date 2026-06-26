@@ -51,16 +51,7 @@ const handleMulterError = (err) => {
 const sendErrorDev = (err, req, res) => {
   return res.status(err.statusCode).json({
     success: false,
-    error: err,
     message: err.message,
-    stack: err.stack,
-    request: {
-      url: req.originalUrl,
-      method: req.method,
-      body: req.body,
-      params: req.params,
-      query: req.query
-    }
   });
 };
 

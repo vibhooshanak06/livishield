@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import FeaturedHealthPlans from "../components/FeaturedHealthPlans";
 import { Button } from "../components/ui/button";
@@ -299,6 +300,7 @@ const ProcessStep = memo(({ item }) => (
 ));
 
 const HealthInsurance = () => {
+  const navigate = useNavigate();
   const benefitCircles = HEALTH_INSURANCE_DATA.benefits.map((benefit, index) => (
     <CircularBenefit key={benefit.title} benefit={benefit} index={index} />
   ));
@@ -330,7 +332,7 @@ const HealthInsurance = () => {
                 and financially secure.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="livishield-btn-secondary" aria-label="Learn more about health insurance">
+                <Button size="lg" className="livishield-btn-secondary" onClick={() => navigate('/health-insurance/plans')} aria-label="Learn more about health insurance">
                   Learn More
                   <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
                 </Button>
@@ -365,14 +367,9 @@ const HealthInsurance = () => {
           
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div className="order-2 lg:order-1">
-              <div className="relative rounded-2xl overflow-hidden shadow-lg">
-                <img 
-                  src="/src/assets/health-insurance.jpg" 
-                  alt="Healthcare professionals providing medical care" 
-                  className="w-full h-64 sm:h-80 object-cover"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 livishield-gradient-bg opacity-20"></div>
+              <div className="relative rounded-2xl overflow-hidden shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center h-64 sm:h-80">
+                <Heart className="h-32 w-32 text-blue-300 opacity-60" aria-hidden="true" />
+                <div className="absolute inset-0 livishield-gradient-bg opacity-10"></div>
               </div>
             </div>
             <div className="order-1 lg:order-2">
@@ -537,7 +534,7 @@ const HealthInsurance = () => {
             Compare plans and get covered today.
           </p>
           <div className="flex justify-center">
-            <Button size="lg" className="livishield-btn-secondary" aria-label="Explore health insurance plans">
+            <Button size="lg" className="livishield-btn-secondary" onClick={() => navigate('/health-insurance/plans')} aria-label="Explore health insurance plans">
               Explore Health Insurance Plans
               <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
             </Button>

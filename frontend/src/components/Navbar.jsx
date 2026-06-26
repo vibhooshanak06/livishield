@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Button } from "./ui/button";
-import { Shield, LogOut, Menu, X, User, ChevronDown } from "lucide-react";
+import { Shield, LogOut, Menu, X, User, ChevronDown, Settings } from "lucide-react";
 import "../styles/theme.css";
 
 const Navbar = () => {
@@ -20,9 +19,8 @@ const Navbar = () => {
   const navLinks = [
     { name: "Home", path: "/home" },
     { name: "About", path: "/about" },
-    { name: "Car Insurance", path: "/car-insurance" },
     { name: "Health Insurance", path: "/health-insurance" },
-    { name: "Customer Dashboard", path: "/dashboard" },
+    { name: "My Dashboard", path: "/dashboard" },
   ];
 
   const isActiveLink = (path) => location.pathname === path;
@@ -39,7 +37,7 @@ const Navbar = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-white">LiviShield</h1>
-                <p className="text-xs text-white/80 leading-none">Insurance Solutions</p>
+                <p className="text-xs text-white/80 leading-none">Health Insurance</p>
               </div>
             </div>
           </div>
@@ -90,6 +88,13 @@ const Navbar = () => {
                     onClick={() => setIsUserMenuOpen(false)}
                   >
                     Customer Dashboard
+                  </Link>
+                  <Link
+                    to="/profile"
+                    className="block px-4 py-2 text-sm livishield-text-primary hover:livishield-section-light flex items-center gap-2"
+                    onClick={() => setIsUserMenuOpen(false)}
+                  >
+                    <Settings className="h-4 w-4" />Profile Settings
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -143,6 +148,11 @@ const Navbar = () => {
                   </p>
                   <p className="text-xs text-white/70">{user?.email}</p>
                 </div>
+                <Link to="/profile" onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full text-left px-4 py-2 text-sm text-white/80 hover:bg-white/10 flex items-center space-x-2">
+                  <Settings className="h-4 w-4" />
+                  <span>Profile Settings</span>
+                </Link>
                 <button
                   onClick={handleLogout}
                   className="w-full text-left px-4 py-2 text-sm text-red-300 hover:bg-red-500/20 flex items-center space-x-2"

@@ -1,99 +1,80 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
+'use strict';
+const express     = require('express');
+const cors        = require('cors');
+const helmet      = require('helmet');
 const compression = require('compression');
-const rateLimit = require('express-rate-limit');
+const rateLimit   = require('express-rate-limit');
+const path        = require('path');
 require('dotenv').config();
 
 const { globalErrorHandler } = require('./middleware/errorHandler');
 
-// Import routes
-const authRoutes = require('./routes/authRoutes');
-const healthInsuranceRoutes = require('./routes/healthInsuranceRoutes');
-const proposalRoutes = require('./routes/proposalRoutes');
+// ── Module routes (feature-based architecture) ────────────────
+const authRoutes           = require('./modules/auth');
+const healthInsuranceRoutes = require('./modules/health-insurance');
+const proposalRoutes       = require('./modules/proposal');
+const adminRoutes          = require('./modules/admin');
 
 const app = express();
 
-// Security middleware
-app.use(helmet({
-  crossOriginEmbedderPolicy: false,
-}));
+// ── Security ──────────────────────────────────────────────────
+app.use(helmet({ crossOriginEmbedderPolicy: false }));
 
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://yourdomain.com'] 
+  origin: process.env.NODE_ENV === 'production'
+    ? (process.env.ALLOWED_ORIGINS || 'https://yourdomain.com').split(',')
     : ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:5174'],
   credentials: true,
   exposedHeaders: ['Authorization', 'Content-Type'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 }));
 
-// Rate limiting
-const limiter = rateLimit({
+app.use(rateLimit({
   windowMs: (process.env.RATE_LIMIT_WINDOW || 15) * 60 * 1000,
-  max: process.env.RATE_LIMIT_MAX || 100,
-  message: 'Too many requests from this IP, please try again later.'
-});
-app.use('/api/', limiter);
+  max:      process.env.RATE_LIMIT_MAX || 100,
+  message:  'Too many requests from this IP, please try again later.',
+}));
 
-// Body parsing middleware
+// ── Parsing & compression ─────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(compression());
 
-// Health check
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
-});
+// ── Static uploads ────────────────────────────────────────────
+app.use('/uploads', express.static(
+  path.join(__dirname, '..', process.env.UPLOAD_PATH || 'uploads')
+));
 
-// Database health check
-app.get('/health/db', async (req, res) => {
+// ── Health checks ─────────────────────────────────────────────
+app.get('/health', (_req, res) =>
+  res.json({ status: 'OK', timestamp: new Date().toISOString(), uptime: process.uptime() })
+);
+
+app.get('/health/db', async (_req, res) => {
   try {
     const { getConnection } = require('./config/mysql');
-    const connection = getConnection();
-    
-    // Test MySQL connection
-    await connection.execute('SELECT 1 as test');
-    
-    // Test if users table exists
-    const [tables] = await connection.execute("SHOW TABLES LIKE 'users'");
-    
-    res.status(200).json({
-      status: 'OK',
-      mysql: 'Connected',
-      usersTable: tables.length > 0 ? 'Exists' : 'Missing',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'Error',
-      mysql: 'Failed',
-      error: error.message,
-      code: error.code,
-      timestamp: new Date().toISOString()
-    });
+    const conn = getConnection();
+    await conn.execute('SELECT 1');
+    const [tables] = await conn.execute("SHOW TABLES LIKE 'users'");
+    res.json({ status: 'OK', mysql: 'Connected', usersTable: tables.length ? 'Exists' : 'Missing', timestamp: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ status: 'Error', mysql: 'Failed', error: e.message, timestamp: new Date().toISOString() });
   }
 });
 
-// API routes
-app.use('/api/auth', authRoutes);
+// ── API routes ────────────────────────────────────────────────
+app.use('/api/auth',             authRoutes);
 app.use('/api/health-insurance', healthInsuranceRoutes);
-app.use('/api/proposals', proposalRoutes);
+app.use('/api/proposals',        proposalRoutes);
+app.use('/api/admin',            adminRoutes);
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found'
-  });
-});
+// ── 404 ───────────────────────────────────────────────────────
+app.use('*', (_req, res) =>
+  res.status(404).json({ success: false, message: 'Route not found' })
+);
 
-// Global error handler
+// ── Global error handler ──────────────────────────────────────
 app.use(globalErrorHandler);
 
 module.exports = app;

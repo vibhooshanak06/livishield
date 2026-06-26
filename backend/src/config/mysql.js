@@ -1,34 +1,38 @@
 const mysql = require('mysql2/promise');
 
-let connection;
+let pool;
 
 const connectMySQL = async () => {
   try {
-    connection = await mysql.createConnection({
-      host: process.env.MYSQL_HOST || 'localhost',
-      port: process.env.MYSQL_PORT || 3306,
-      user: process.env.MYSQL_USER || 'root',
-      password: process.env.MYSQL_PASSWORD,
-      database: process.env.MYSQL_DATABASE || 'livishield',
+    pool = mysql.createPool({
+      host:             process.env.MYSQL_HOST     || 'localhost',
+      port:             parseInt(process.env.MYSQL_PORT) || 3306,
+      user:             process.env.MYSQL_USER     || 'root',
+      password:         process.env.MYSQL_PASSWORD,
+      database:         process.env.MYSQL_DATABASE || 'livishield',
       waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0
+      connectionLimit:  20,
+      queueLimit:       0,
+      enableKeepAlive:  true,
+      keepAliveInitialDelay: 30000,
     });
 
-    // Test connection
-    await connection.execute('SELECT 1');
-    
-    return connection;
+    // Verify the pool can acquire a connection
+    const conn = await pool.getConnection();
+    await conn.execute('SELECT 1');
+    conn.release();
+
+    return pool;
   } catch (error) {
     throw error;
   }
 };
 
 const getConnection = () => {
-  if (!connection) {
-    throw new Error('MySQL connection not established');
+  if (!pool) {
+    throw new Error('MySQL pool not initialised. Call connectMySQL() first.');
   }
-  return connection;
+  return pool;
 };
 
 module.exports = { connectMySQL, getConnection };

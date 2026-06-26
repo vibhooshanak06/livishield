@@ -2,363 +2,209 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { 
-  ArrowLeft,
-  User,
-  Users,
-  Phone,
-  Mail,
-  Shield,
-  CheckCircle,
-  AlertCircle,
-  FileText,
-  Star,
-  Calendar,
-  MapPin,
-  Heart,
-  DollarSign,
-  Clock
+import {
+  ArrowLeft, ArrowRight, User, Users, Heart, DollarSign,
+  CheckCircle, AlertCircle, Star, MapPin, Shield
 } from 'lucide-react';
 import healthInsuranceService from '../services/healthInsuranceService';
 import '../styles/theme.css';
 
-const customStyles = `
-  .error-field {
-    animation: shake 0.5s ease-in-out;
-  }
-  
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-5px); }
-    75% { transform: translateX(5px); }
-  }
-`;
+/* ── helpers ── */
+const ic = (err) =>
+  `w-full p-2.5 border rounded-lg text-sm focus:ring-2 livishield-focus-ring focus:border-transparent ${
+    err ? 'border-red-500 bg-red-50' : 'border-gray-300'
+  }`;
 
-// Helper component for form fields with validation - moved outside to prevent re-creation
-const FormField = ({ label, error, required = false, children }) => (
-  <div className="mb-4">
-    <label className="block text-sm font-medium mb-2 text-gray-700">
-      {label} {required && <span className="text-red-500">*</span>}
+const Field = ({ label, error, required, children }) => (
+  <div className="mb-3">
+    <label className="block text-xs font-medium mb-1 text-gray-600">
+      {label}{required && <span className="text-red-500 ml-0.5">*</span>}
     </label>
-    <div className={error ? 'error-field' : ''}>
-      {children}
-    </div>
+    {children}
     {error && (
-      <p className="mt-1 text-sm text-red-600 flex items-center">
-        <AlertCircle className="h-4 w-4 mr-1" />
-        {error}
+      <p className="mt-1 text-xs text-red-600 flex items-center gap-1">
+        <AlertCircle className="h-3 w-3 shrink-0" />{error}
       </p>
     )}
   </div>
 );
 
+/* step definitions */
+const STEPS = [
+  { id: 'personal',  label: 'Personal',  icon: User },
+  { id: 'address',   label: 'Address',   icon: MapPin },
+  { id: 'medical',   label: 'Medical',   icon: Heart },
+  { id: 'addons',    label: 'Add-ons',   icon: DollarSign },
+  { id: 'review',    label: 'Review',    icon: CheckCircle },
+];
+
+const CONDITIONS = ['None','Diabetes','Hypertension','Heart Disease','Asthma','Thyroid','Kidney Disease','Cancer','Other'];
+
+/* ── Progress Bar ── */
+const StepProgress = ({ steps, current }) => (
+  <div className="flex items-center w-full">
+    {steps.map((step, idx) => {
+      const done = idx < current;
+      const active = idx === current;
+      const Icon = step.icon;
+      return (
+        <div key={step.id} className="flex items-center flex-1 last:flex-none">
+          <div className="flex flex-col items-center">
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center border-2 transition-all duration-300 ${
+              done    ? 'livishield-bg-accent border-transparent text-white' :
+              active  ? 'border-blue-500 livishield-text-accent bg-blue-50' :
+                        'border-gray-300 text-gray-400 bg-white'
+            }`}>
+              {done ? <CheckCircle className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
+            </div>
+            <span className={`text-xs mt-1 font-medium whitespace-nowrap ${
+              active ? 'livishield-text-accent' : done ? 'text-gray-600' : 'text-gray-400'
+            }`}>{step.label}</span>
+          </div>
+          {idx < steps.length - 1 && (
+            <div className={`flex-1 h-0.5 mx-2 mb-4 transition-all duration-300 ${done ? 'livishield-bg-accent' : 'bg-gray-200'}`} />
+          )}
+        </div>
+      );
+    })}
+  </div>
+);
+
+/* ── Main Component ── */
 const HealthInsuranceQuote = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [plan, setPlan] = useState(null);
+  const [plan, setPlan]     = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
+  const [step, setStep]     = useState(0);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
-    // Personal Information
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    dateOfBirth: '',
-    gender: '',
-    
-    // Address Information
-    address: '',
-    city: '',
-    state: '',
-    pincode: '',
-    
-    // Family Information
+    firstName: '', lastName: '', email: '', phone: '', dateOfBirth: '', gender: '',
+    address: '', city: '', state: '', pincode: '',
     familyMembers: [],
-    
-    // Medical Information
-    preExistingConditions: [],
-    currentMedications: '',
-    previousInsurance: false,
-    previousInsuranceDetails: '',
-    
-    // Preferences
-    preferredHospitals: '',
-    additionalRequirements: '',
-    
-    // Selected Add-ons
+    preExistingConditions: [], currentMedications: '',
+    previousInsurance: false, previousInsuranceDetails: '',
+    preferredHospitals: '', additionalRequirements: '',
     selectedAddOns: []
   });
 
-  const [familyMember, setFamilyMember] = useState({
-    name: '',
-    relationship: '',
-    dateOfBirth: '',
-    gender: ''
-  });
-
-  const [validationErrors, setValidationErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [familyMember, setFamilyMember] = useState({ name: '', relationship: '', dateOfBirth: '', gender: '' });
 
   useEffect(() => {
-    fetchPlanDetails();
+    (async () => {
+      try {
+        const data = await healthInsuranceService.getPlanById(id);
+        setPlan(data);
+      } catch {
+        setFetchError('Failed to load plan details.');
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [id]);
 
-  const fetchPlanDetails = async () => {
-    try {
-      setLoading(true);
-      const data = await healthInsuranceService.getPlanById(id);
-      setPlan(data);
-    } catch (err) {
-      setError('Failed to fetch plan details');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = useCallback((field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    
-    // Clear validation error when user starts typing
-    if (validationErrors[field]) {
-      setValidationErrors(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-    }
-  }, [validationErrors]);
-
-  // Create individual handlers for each field to prevent re-renders
-  const handleFirstNameChange = useCallback((e) => handleInputChange('firstName', e.target.value), [handleInputChange]);
-  const handleLastNameChange = useCallback((e) => handleInputChange('lastName', e.target.value), [handleInputChange]);
-  const handleEmailChange = useCallback((e) => handleInputChange('email', e.target.value), [handleInputChange]);
-  const handlePhoneChange = useCallback((e) => handleInputChange('phone', e.target.value), [handleInputChange]);
-  const handleDateOfBirthChange = useCallback((e) => handleInputChange('dateOfBirth', e.target.value), [handleInputChange]);
-  const handleGenderChange = useCallback((e) => handleInputChange('gender', e.target.value), [handleInputChange]);
-  const handleAddressChange = useCallback((e) => handleInputChange('address', e.target.value), [handleInputChange]);
-  const handleCityChange = useCallback((e) => handleInputChange('city', e.target.value), [handleInputChange]);
-  const handleStateChange = useCallback((e) => handleInputChange('state', e.target.value), [handleInputChange]);
-  const handlePincodeChange = useCallback((e) => handleInputChange('pincode', e.target.value), [handleInputChange]);
-  const handleCurrentMedicationsChange = useCallback((e) => handleInputChange('currentMedications', e.target.value), [handleInputChange]);
-  const handlePreviousInsuranceDetailsChange = useCallback((e) => handleInputChange('previousInsuranceDetails', e.target.value), [handleInputChange]);
-  const handlePreferredHospitalsChange = useCallback((e) => handleInputChange('preferredHospitals', e.target.value), [handleInputChange]);
-  const handleAdditionalRequirementsChange = useCallback((e) => handleInputChange('additionalRequirements', e.target.value), [handleInputChange]);
-
-  const handleFamilyMemberChange = useCallback((field, value) => {
-    setFamilyMember(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const set = useCallback((field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setErrors(prev => ({ ...prev, [field]: '' }));
   }, []);
 
-  // Family member field handlers
-  const handleFamilyNameChange = useCallback((e) => handleFamilyMemberChange('name', e.target.value), [handleFamilyMemberChange]);
-  const handleFamilyRelationshipChange = useCallback((e) => handleFamilyMemberChange('relationship', e.target.value), [handleFamilyMemberChange]);
-  const handleFamilyDateOfBirthChange = useCallback((e) => handleFamilyMemberChange('dateOfBirth', e.target.value), [handleFamilyMemberChange]);
-  const handleFamilyGenderChange = useCallback((e) => handleFamilyMemberChange('gender', e.target.value), [handleFamilyMemberChange]);
+  /* per-step validation */
+  const validateStep = useCallback((s) => {
+    const e = {};
+    if (s === 0) {
+      if (!formData.firstName.trim()) e.firstName = 'Required';
+      if (!formData.lastName.trim())  e.lastName  = 'Required';
+      if (!formData.email.trim()) e.email = 'Required';
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) e.email = 'Invalid email';
+      if (!formData.phone.trim()) e.phone = 'Required';
+      else if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g,''))) e.phone = 'Enter valid 10-digit number';
+      if (!formData.dateOfBirth) e.dateOfBirth = 'Required';
+      else {
+        const age = new Date().getFullYear() - new Date(formData.dateOfBirth).getFullYear();
+        if (age < 18) e.dateOfBirth = 'Must be at least 18';
+        if (age > 80) e.dateOfBirth = 'Max age is 80';
+      }
+      if (!formData.gender) e.gender = 'Required';
+    }
+    if (s === 1) {
+      if (!formData.address.trim()) e.address = 'Required';
+      if (!formData.city.trim())    e.city    = 'Required';
+      if (!formData.state.trim())   e.state   = 'Required';
+      if (!formData.pincode.trim()) e.pincode = 'Required';
+      else if (!/^\d{6}$/.test(formData.pincode)) e.pincode = 'Enter valid 6-digit PIN';
+    }
+    if (s === 2) {
+      if (formData.preExistingConditions.length === 0) e.preExistingConditions = 'Please select at least one option';
+      if (formData.previousInsurance && !formData.previousInsuranceDetails.trim())
+        e.previousInsuranceDetails = 'Please provide details';
+    }
+    return e;
+  }, [formData]);
 
-  // Radio button handlers
-  const handlePreviousInsuranceFalse = useCallback(() => handleInputChange('previousInsurance', false), [handleInputChange]);
-  const handlePreviousInsuranceTrue = useCallback(() => handleInputChange('previousInsurance', true), [handleInputChange]);
+  const next = useCallback(() => {
+    // skip addons step if plan has no addons
+    const effectiveSteps = plan?.addOns?.length ? STEPS : STEPS.filter(s => s.id !== 'addons');
+    const maxStep = effectiveSteps.length - 1;
+    const e = validateStep(step);
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setErrors({});
+    setStep(s => Math.min(s + 1, maxStep));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [step, validateStep, plan]);
+
+  const back = useCallback(() => {
+    setErrors({});
+    setStep(s => Math.max(s - 1, 0));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
 
   const addFamilyMember = useCallback(() => {
-    const errors = validateFamilyMember(familyMember);
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(prev => ({ ...prev, ...errors }));
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      familyMembers: [...prev.familyMembers, { ...familyMember, id: Date.now() }]
-    }));
+    const e = {};
+    if (!familyMember.name.trim())    e.fm_name = 'Required';
+    if (!familyMember.relationship)   e.fm_rel  = 'Required';
+    if (!familyMember.dateOfBirth)    e.fm_dob  = 'Required';
+    if (!familyMember.gender)         e.fm_gen  = 'Required';
+    if (Object.keys(e).length) { setErrors(prev => ({ ...prev, ...e })); return; }
+    setFormData(prev => ({ ...prev, familyMembers: [...prev.familyMembers, { ...familyMember, id: Date.now() }] }));
     setFamilyMember({ name: '', relationship: '', dateOfBirth: '', gender: '' });
-    
-    // Clear any family member validation errors
-    const familyErrorKeys = Object.keys(validationErrors).filter(key => key.startsWith('family_'));
-    if (familyErrorKeys.length > 0) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev };
-        familyErrorKeys.forEach(key => delete newErrors[key]);
-        return newErrors;
-      });
-    }
-  }, [familyMember, validationErrors]);
+    setErrors(prev => { const n = { ...prev }; ['fm_name','fm_rel','fm_dob','fm_gen'].forEach(k => delete n[k]); return n; });
+  }, [familyMember]);
 
-  const removeFamilyMember = useCallback((id) => {
-    setFormData(prev => ({
-      ...prev,
-      familyMembers: prev.familyMembers.filter(member => member.id !== id)
-    }));
-  }, []);
+  const removeFamilyMember = useCallback((mid) =>
+    setFormData(prev => ({ ...prev, familyMembers: prev.familyMembers.filter(m => m.id !== mid) })), []);
 
-  const toggleAddOn = useCallback((addon) => {
+  const toggleAddOn = useCallback((addon) =>
     setFormData(prev => ({
       ...prev,
       selectedAddOns: prev.selectedAddOns.find(a => a.name === addon.name)
         ? prev.selectedAddOns.filter(a => a.name !== addon.name)
         : [...prev.selectedAddOns, addon]
-    }));
-  }, []);
+    })), []);
 
-  const calculateTotalPremium = useCallback(() => {
+  const calcTotal = useCallback(() => {
     if (!plan) return 0;
-    
-    let basePremium = plan.premium.annual;
-    let addOnPremium = formData.selectedAddOns.reduce((sum, addon) => sum + addon.premium, 0);
-    
-    // Family member multiplier (simplified calculation)
-    let familyMultiplier = 1;
-    if (plan.type === 'Family' && formData.familyMembers.length > 0) {
-      familyMultiplier = 1 + (formData.familyMembers.length * 0.3);
-    }
-    
-    return Math.round((basePremium * familyMultiplier) + addOnPremium);
+    const addOnPremium = formData.selectedAddOns.reduce((s, a) => s + a.premium, 0);
+    const fm = plan.type === 'Family' && formData.familyMembers.length > 0
+      ? 1 + formData.familyMembers.length * 0.3 : 1;
+    return Math.round(plan.premium.annual * fm + addOnPremium);
   }, [plan, formData.selectedAddOns, formData.familyMembers]);
 
-  // Validation functions
-  const validateForm = useCallback(() => {
-    const errors = {};
-    
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
-    }
-    
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required';
-    }
-    
-    if (!formData.email.trim()) {
-      errors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errors.email = 'Please enter a valid email address';
-    }
-    
-    if (!formData.phone.trim()) {
-      errors.phone = 'Phone number is required';
-    } else if (!/^[6-9]\d{9}$/.test(formData.phone.replace(/\D/g, ''))) {
-      errors.phone = 'Please enter a valid 10-digit phone number';
-    }
-    
-    if (!formData.dateOfBirth) {
-      errors.dateOfBirth = 'Date of birth is required';
-    } else {
-      const birthDate = new Date(formData.dateOfBirth);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-      
-      if (age < 18) {
-        errors.dateOfBirth = 'You must be at least 18 years old';
-      } else if (age > 80) {
-        errors.dateOfBirth = 'Maximum age limit is 80 years';
-      }
-    }
-    
-    if (!formData.gender) {
-      errors.gender = 'Gender is required';
-    }
-    
-    if (!formData.address.trim()) {
-      errors.address = 'Address is required';
-    }
-    
-    if (!formData.city.trim()) {
-      errors.city = 'City is required';
-    }
-    
-    if (!formData.state.trim()) {
-      errors.state = 'State is required';
-    }
-    
-    if (!formData.pincode.trim()) {
-      errors.pincode = 'PIN code is required';
-    } else if (!/^\d{6}$/.test(formData.pincode)) {
-      errors.pincode = 'Please enter a valid 6-digit PIN code';
-    }
-
-    // Pre-existing conditions validation
-    if (formData.preExistingConditions.length === 0) {
-      errors.preExistingConditions = 'Please select your medical condition status';
-    }
-    
-    // If previous insurance is selected, details are required
-    if (formData.previousInsurance && !formData.previousInsuranceDetails.trim()) {
-      errors.previousInsuranceDetails = 'Please provide details about your previous insurance';
-    }
-    
-    return errors;
-  }, [formData]);
-
-  const validateFamilyMember = useCallback((member) => {
-    const errors = {};
-    
-    if (!member.name.trim()) {
-      errors.family_name = 'Family member name is required';
-    }
-    
-    if (!member.relationship) {
-      errors.family_relationship = 'Relationship is required';
-    }
-    
-    if (!member.dateOfBirth) {
-      errors.family_dateOfBirth = 'Date of birth is required';
-    } else {
-      const birthDate = new Date(member.dateOfBirth);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-      
-      if (age < 0) {
-        errors.family_dateOfBirth = 'Invalid date of birth';
-      } else if (age > 100) {
-        errors.family_dateOfBirth = 'Age cannot exceed 100 years';
-      }
-    }
-    
-    if (!member.gender) {
-      errors.family_gender = 'Gender is required';
-    }
-    
-    return errors;
-  }, []);
-
   const submitProposal = useCallback(async () => {
-    // Final validation before submission
-    const errors = validateForm();
-    
-    if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
-      // Scroll to first error
-      const firstErrorElement = document.querySelector('.error-field');
-      if (firstErrorElement) {
-        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-      return;
-    }
-
     setIsSubmitting(true);
-    
     try {
-      // Prepare proposal data
-      const proposalData = {
+      const total = calcTotal();
+      const body = {
         planId: id,
         personalInfo: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-          dateOfBirth: formData.dateOfBirth,
-          gender: formData.gender,
-          address: {
-            street: formData.address,
-            city: formData.city,
-            state: formData.state,
-            pincode: formData.pincode
-          }
+          firstName: formData.firstName, lastName: formData.lastName,
+          email: formData.email, phone: formData.phone,
+          dateOfBirth: formData.dateOfBirth, gender: formData.gender,
+          address: { street: formData.address, city: formData.city, state: formData.state, pincode: formData.pincode }
         },
         familyMembers: formData.familyMembers,
         medicalInfo: {
@@ -372,626 +218,470 @@ const HealthInsuranceQuote = () => {
         selectedAddOns: formData.selectedAddOns,
         premiumDetails: {
           basePremium: plan.premium.annual,
-          addOnPremium: formData.selectedAddOns.reduce((sum, addon) => sum + addon.premium, 0),
+          addOnPremium: formData.selectedAddOns.reduce((s, a) => s + a.premium, 0),
           familyPremium: formData.familyMembers.length * plan.premium.annual * 0.3,
-          totalAnnualPremium: calculateTotalPremium(),
-          totalMonthlyPremium: Math.round(calculateTotalPremium() / 12)
+          totalAnnualPremium: total,
+          totalMonthlyPremium: Math.round(total / 12)
         }
       };
-
-      // Get authentication token
       const token = localStorage.getItem('liveshield_token');
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      // Add authorization header if token exists
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/proposals/submit`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(proposalData),
+      const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/proposals/submit`, {
+        method: 'POST', headers, body: JSON.stringify(body)
       });
-
-      const result = await response.json();
-
+      const result = await res.json();
       if (result.success) {
-        // Navigate to success page with proposal details
         navigate('/health-insurance/proposal-success', {
           state: {
-            proposalNumber: result.data.proposalNumber,
-            proposalId: result.data.proposalId,
+            proposalNumber:    result.data.proposalNumber,
+            proposalId:        result.data.proposalId,
             requiredDocuments: result.data.requiredDocuments,
-            planName: plan.name
+            planName:          plan.name,
+            submittedAt:       result.data.submittedAt,
           }
         });
       } else {
-        alert('Error submitting proposal: ' + result.message);
+        alert('Error: ' + result.message);
       }
-    } catch (error) {
-      alert('Error submitting proposal. Please try again.');
+    } catch {
+      alert('Submission failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [validateForm, formData, plan, calculateTotalPremium, id, navigate]);
+  }, [formData, plan, calcTotal, id, navigate]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 livishield-border-accent mx-auto mb-4"></div>
-            <p className="livishield-text-secondary">Loading quote form...</p>
-          </div>
+  /* ── loading / error states ── */
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50"><Navbar />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 livishield-border-accent mx-auto mb-3" />
+          <p className="text-sm livishield-text-secondary">Loading...</p>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 
-  if (error || !plan) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="text-center py-12">
-            <div className="text-red-500 mb-4">
-              <AlertCircle className="h-12 w-12 mx-auto mb-2" />
-              <p className="text-lg font-medium">Plan Not Found</p>
-              <p className="text-sm">{error}</p>
-            </div>
-            <Button onClick={() => navigate('/health-insurance/plans')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Plans
-            </Button>
-          </div>
-        </div>
+  if (fetchError || !plan) return (
+    <div className="min-h-screen bg-gray-50"><Navbar />
+      <div className="max-w-lg mx-auto px-4 py-20 text-center">
+        <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+        <p className="font-medium text-gray-800 mb-1">Plan not found</p>
+        <p className="text-sm text-gray-500 mb-4">{fetchError}</p>
+        <Button onClick={() => navigate('/health-insurance/plans')}><ArrowLeft className="h-4 w-4 mr-1" />Back to Plans</Button>
       </div>
-    );
-  }
+    </div>
+  );
+
+  const total = calcTotal();
+  const visibleSteps = plan.addOns?.length ? STEPS : STEPS.filter(s => s.id !== 'addons');
+  const isLastStep = step === visibleSteps.length - 1;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <style>{customStyles}</style>
       <Navbar />
-      
-      {/* Header */}
-      <section className="bg-white border-b py-6">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              onClick={() => navigate(`/health-insurance/plan/${id}`)}
-              className="mr-4"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Plan Details
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold livishield-text-primary">Get Your Quote</h1>
-              <p className="livishield-text-secondary mt-1">{plan.name} - {plan.provider}</p>
-            </div>
+
+      {/* ── Top bar ── */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => navigate(`/health-insurance/plan/${id}`)}>
+            <ArrowLeft className="h-4 w-4 mr-1" />Back
+          </Button>
+          <div className="h-5 w-px bg-gray-200" />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold livishield-text-primary truncate">{plan.name}</p>
+            <p className="text-xs livishield-text-secondary truncate">{plan.provider}</p>
+          </div>
+          <div className="ml-auto text-right shrink-0">
+            <p className="text-xs text-gray-400">Total / year</p>
+            <p className="text-base font-bold livishield-text-accent">{healthInsuranceService.formatCurrency(total)}</p>
           </div>
         </div>
-      </section>
+      </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Plan Summary Card */}
-        <Card className="livishield-card mb-8">
-          <CardContent className="p-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <div className="flex items-center space-x-3 mb-3">
-                  {plan.popular && (
-                    <Badge className="livishield-badge-accent">Popular</Badge>
-                  )}
-                  {plan.recommended && (
-                    <Badge className="livishield-badge-secondary">Recommended</Badge>
-                  )}
-                  <div className="flex items-center space-x-1">
-                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="text-sm font-medium">{plan.rating}</span>
-                  </div>
-                </div>
-                <h2 className="text-xl font-bold livishield-text-primary mb-2">{plan.name}</h2>
-                <p className="livishield-text-secondary mb-2">{plan.provider}</p>
-                <Badge variant="outline">{plan.type}</Badge>
-              </div>
-              
-              <div className="text-right">
-                <div className="text-3xl font-bold livishield-text-accent mb-2">
-                  {healthInsuranceService.formatCurrency(calculateTotalPremium())}
-                  <span className="text-sm font-normal livishield-text-secondary">/year</span>
-                </div>
-                <div className="livishield-text-secondary">
-                  {healthInsuranceService.formatCurrency(Math.round(calculateTotalPremium() / 12))}/month
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
-                  <div className="text-center p-2 bg-gray-50 rounded">
-                    <div className="font-semibold">{healthInsuranceService.formatCurrency(plan.sumInsured)}</div>
-                    <div className="text-xs livishield-text-secondary">Sum Insured</div>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded">
-                    <div className="font-semibold">{healthInsuranceService.formatNumber(plan.networkHospitals)}+</div>
-                    <div className="text-xs livishield-text-secondary">Network Hospitals</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+        {/* ── Progress tracker ── */}
+        <div className="bg-white rounded-xl border p-4 mb-6">
+          <StepProgress steps={visibleSteps} current={step} />
+        </div>
 
-        {/* Proposal Form */}
-        <Card className="livishield-card">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5 livishield-text-accent" />
-              <span>Insurance Proposal Form</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="space-y-8">
-              {/* Personal Information */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2 livishield-text-primary">
-                  <User className="h-5 w-5 livishield-text-accent" />
-                  <span>Personal Information</span>
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <FormField label="First Name" error={validationErrors.firstName} required>
-                    <input
-                      type="text"
-                      value={formData.firstName}
-                      onChange={handleFirstNameChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.firstName ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your first name"
-                    />
-                  </FormField>
-                  
-                  <FormField label="Last Name" error={validationErrors.lastName} required>
-                    <input
-                      type="text"
-                      value={formData.lastName}
-                      onChange={handleLastNameChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.lastName ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your last name"
-                    />
-                  </FormField>
-                </div>
+        {/* ── Two-column ── */}
+        <div className="flex flex-col lg:flex-row gap-6 items-start">
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <FormField label="Email" error={validationErrors.email} required>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={handleEmailChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.email ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your email"
-                    />
-                  </FormField>
-                  
-                  <FormField label="Phone Number" error={validationErrors.phone} required>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={handlePhoneChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.phone ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your 10-digit phone number"
-                    />
-                  </FormField>
-                </div>
+          {/* ── LEFT: step card ── */}
+          <div className="flex-1 min-w-0">
+            <Card className="livishield-card">
+              <CardContent className="p-6">
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <FormField label="Date of Birth" error={validationErrors.dateOfBirth} required>
-                    <input
-                      type="date"
-                      value={formData.dateOfBirth}
-                      onChange={handleDateOfBirthChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.dateOfBirth ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                    />
-                  </FormField>
-                  
-                  <FormField label="Gender" error={validationErrors.gender} required>
-                    <select
-                      value={formData.gender}
-                      onChange={handleGenderChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.gender ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                    >
-                      <option value="">Select Gender</option>
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
-                      <option value="other">Other</option>
-                    </select>
-                  </FormField>
-                </div>
-              </div>
-
-              {/* Address Information */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2 livishield-text-primary">
-                  <MapPin className="h-5 w-5 livishield-text-accent" />
-                  <span>Address Information</span>
-                </h3>
-                
-                <FormField label="Address" error={validationErrors.address} required>
-                  <textarea
-                    value={formData.address}
-                    onChange={handleAddressChange}
-                    className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                      validationErrors.address ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    rows="3"
-                    placeholder="Enter your complete address"
-                  />
-                </FormField>
-
-                <div className="grid md:grid-cols-3 gap-4">
-                  <FormField label="City" error={validationErrors.city} required>
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={handleCityChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.city ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your city"
-                    />
-                  </FormField>
-                  
-                  <FormField label="State" error={validationErrors.state} required>
-                    <input
-                      type="text"
-                      value={formData.state}
-                      onChange={handleStateChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.state ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter your state"
-                    />
-                  </FormField>
-                  
-                  <FormField label="PIN Code" error={validationErrors.pincode} required>
-                    <input
-                      type="text"
-                      value={formData.pincode}
-                      onChange={handlePincodeChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.pincode ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter 6-digit PIN code"
-                      maxLength="6"
-                    />
-                  </FormField>
-                </div>
-              </div>
-
-              {/* Family Information */}
-              {plan.type === 'Family' && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2 livishield-text-primary">
-                    <Users className="h-5 w-5 livishield-text-accent" />
-                    <span>Family Information</span>
-                  </h3>
-                  
-                  {/* Add Family Member Form */}
-                  <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                    <h4 className="font-medium mb-3">Add Family Member</h4>
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <FormField label="Name" error={validationErrors.family_name}>
-                        <input
-                          type="text"
-                          value={familyMember.name}
-                          onChange={handleFamilyNameChange}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                            validationErrors.family_name ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                          placeholder="Enter family member name"
-                        />
-                      </FormField>
-                      
-                      <FormField label="Relationship" error={validationErrors.family_relationship}>
-                        <select
-                          value={familyMember.relationship}
-                          onChange={handleFamilyRelationshipChange}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                            validationErrors.family_relationship ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        >
-                          <option value="">Select Relationship</option>
-                          <option value="spouse">Spouse</option>
-                          <option value="son">Son</option>
-                          <option value="daughter">Daughter</option>
-                          <option value="father">Father</option>
-                          <option value="mother">Mother</option>
-                          <option value="father-in-law">Father-in-law</option>
-                          <option value="mother-in-law">Mother-in-law</option>
-                        </select>
-                      </FormField>
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4 mb-4">
-                      <FormField label="Date of Birth" error={validationErrors.family_dateOfBirth}>
-                        <input
-                          type="date"
-                          value={familyMember.dateOfBirth}
-                          onChange={handleFamilyDateOfBirthChange}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                            validationErrors.family_dateOfBirth ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        />
-                      </FormField>
-                      
-                      <FormField label="Gender" error={validationErrors.family_gender}>
-                        <select
-                          value={familyMember.gender}
-                          onChange={handleFamilyGenderChange}
-                          className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                            validationErrors.family_gender ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        >
-                          <option value="">Select Gender</option>
+                {/* STEP 0 — Personal */}
+                {visibleSteps[step]?.id === 'personal' && (
+                  <div>
+                    <h2 className="text-base font-semibold livishield-text-primary mb-4 flex items-center gap-2">
+                      <User className="h-4 w-4 livishield-text-accent" />Personal Information
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                      <Field label="First Name" error={errors.firstName} required>
+                        <input type="text" value={formData.firstName} onChange={e => set('firstName', e.target.value)}
+                          className={ic(errors.firstName)} placeholder="First name" />
+                      </Field>
+                      <Field label="Last Name" error={errors.lastName} required>
+                        <input type="text" value={formData.lastName} onChange={e => set('lastName', e.target.value)}
+                          className={ic(errors.lastName)} placeholder="Last name" />
+                      </Field>
+                      <Field label="Email" error={errors.email} required>
+                        <input type="email" value={formData.email} onChange={e => set('email', e.target.value)}
+                          className={ic(errors.email)} placeholder="you@email.com" />
+                      </Field>
+                      <Field label="Phone" error={errors.phone} required>
+                        <input type="tel" value={formData.phone} onChange={e => set('phone', e.target.value)}
+                          className={ic(errors.phone)} placeholder="10-digit mobile number" />
+                      </Field>
+                      <Field label="Date of Birth" error={errors.dateOfBirth} required>
+                        <input type="date" value={formData.dateOfBirth} onChange={e => set('dateOfBirth', e.target.value)}
+                          className={ic(errors.dateOfBirth)}
+                          max={new Date(new Date().setFullYear(new Date().getFullYear()-18)).toISOString().split('T')[0]} />
+                      </Field>
+                      <Field label="Gender" error={errors.gender} required>
+                        <select value={formData.gender} onChange={e => set('gender', e.target.value)} className={ic(errors.gender)}>
+                          <option value="">Select gender</option>
                           <option value="male">Male</option>
                           <option value="female">Female</option>
                           <option value="other">Other</option>
                         </select>
-                      </FormField>
+                      </Field>
                     </div>
-                    
-                    <Button 
-                      type="button" 
-                      onClick={addFamilyMember}
-                      className="livishield-btn-primary"
-                    >
-                      Add Family Member
-                    </Button>
-                  </div>
 
-                  {/* Family Members List */}
-                  {formData.familyMembers.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="font-medium">Added Family Members ({formData.familyMembers.length})</h4>
-                      {formData.familyMembers.map((member, index) => (
-                        <div key={member.id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
-                          <div>
-                            <p className="font-medium">{member.name}</p>
-                            <p className="text-sm text-gray-600">
-                              {member.relationship} • {member.gender} • {new Date().getFullYear() - new Date(member.dateOfBirth).getFullYear()} years
-                            </p>
+                    {/* Family members sub-section (only for Family plan) */}
+                    {plan.type === 'Family' && (
+                      <div className="mt-4 pt-4 border-t">
+                        <h3 className="text-sm font-semibold livishield-text-primary mb-3 flex items-center gap-2">
+                          <Users className="h-4 w-4 livishield-text-accent" />Family Members
+                        </h3>
+                        <div className="bg-gray-50 rounded-lg p-4 mb-3">
+                          <div className="grid grid-cols-2 gap-3 mb-3">
+                            <Field label="Name" error={errors.fm_name}>
+                              <input type="text" value={familyMember.name} onChange={e => setFamilyMember(p => ({ ...p, name: e.target.value }))}
+                                className={ic(errors.fm_name)} placeholder="Full name" />
+                            </Field>
+                            <Field label="Relationship" error={errors.fm_rel}>
+                              <select value={familyMember.relationship} onChange={e => setFamilyMember(p => ({ ...p, relationship: e.target.value }))}
+                                className={ic(errors.fm_rel)}>
+                                <option value="">Select</option>
+                                {['Spouse','Son','Daughter','Father','Mother','Father-in-law','Mother-in-law'].map(r => (
+                                  <option key={r} value={r.toLowerCase()}>{r}</option>
+                                ))}
+                              </select>
+                            </Field>
+                            <Field label="Date of Birth" error={errors.fm_dob}>
+                              <input type="date" value={familyMember.dateOfBirth} onChange={e => setFamilyMember(p => ({ ...p, dateOfBirth: e.target.value }))}
+                                className={ic(errors.fm_dob)} />
+                            </Field>
+                            <Field label="Gender" error={errors.fm_gen}>
+                              <select value={familyMember.gender} onChange={e => setFamilyMember(p => ({ ...p, gender: e.target.value }))}
+                                className={ic(errors.fm_gen)}>
+                                <option value="">Select</option>
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                              </select>
+                            </Field>
                           </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeFamilyMember(member.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            Remove
-                          </Button>
+                          <Button type="button" size="sm" onClick={addFamilyMember} className="livishield-btn-primary">+ Add Member</Button>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Medical Information */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2 livishield-text-primary">
-                  <Heart className="h-5 w-5 livishield-text-accent" />
-                  <span>Medical Information</span>
-                </h3>
-                
-                <FormField label="Pre-existing Medical Conditions" error={validationErrors.preExistingConditions} required>
-                  <div className="space-y-2">
-                    {[
-                      'None',
-                      'Diabetes',
-                      'Hypertension',
-                      'Heart Disease',
-                      'Asthma',
-                      'Thyroid',
-                      'Kidney Disease',
-                      'Cancer',
-                      'Other'
-                    ].map((condition) => (
-                      <label key={condition} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={formData.preExistingConditions.includes(condition)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              if (condition === 'None') {
-                                handleInputChange('preExistingConditions', ['None']);
-                              } else {
-                                const filtered = formData.preExistingConditions.filter(c => c !== 'None');
-                                handleInputChange('preExistingConditions', [...filtered, condition]);
-                              }
-                            } else {
-                              handleInputChange('preExistingConditions', 
-                                formData.preExistingConditions.filter(c => c !== condition)
-                              );
-                            }
-                          }}
-                          className="rounded border-gray-300 livishield-text-accent livishield-focus-ring"
-                        />
-                        <span className="text-sm">{condition}</span>
-                      </label>
-                    ))}
+                        {formData.familyMembers.map(m => (
+                          <div key={m.id} className="flex items-center justify-between p-3 bg-white border rounded-lg mb-2">
+                            <div>
+                              <p className="text-sm font-medium">{m.name}</p>
+                              <p className="text-xs text-gray-500 capitalize">{m.relationship} · {m.gender} · {new Date().getFullYear() - new Date(m.dateOfBirth).getFullYear()} yrs</p>
+                            </div>
+                            <Button type="button" variant="ghost" size="sm" onClick={() => removeFamilyMember(m.id)}
+                              className="text-red-500 hover:bg-red-50 text-xs h-7 px-2">Remove</Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </FormField>
-
-                <FormField label="Current Medications (if any)">
-                  <textarea
-                    value={formData.currentMedications}
-                    onChange={handleCurrentMedicationsChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent"
-                    rows="3"
-                    placeholder="List any current medications you are taking"
-                  />
-                </FormField>
-
-                <FormField label="Previous Health Insurance">
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        name="previousInsurance"
-                        checked={formData.previousInsurance === false}
-                        onChange={handlePreviousInsuranceFalse}
-                        className="livishield-text-accent livishield-focus-ring"
-                      />
-                      <span className="text-sm">No, this is my first health insurance</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        name="previousInsurance"
-                        checked={formData.previousInsurance === true}
-                        onChange={handlePreviousInsuranceTrue}
-                        className="livishield-text-accent livishield-focus-ring"
-                      />
-                      <span className="text-sm">Yes, I have had health insurance before</span>
-                    </label>
-                  </div>
-                </FormField>
-
-                {formData.previousInsurance && (
-                  <FormField label="Previous Insurance Details" error={validationErrors.previousInsuranceDetails} required>
-                    <textarea
-                      value={formData.previousInsuranceDetails}
-                      onChange={handlePreviousInsuranceDetailsChange}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent ${
-                        validationErrors.previousInsuranceDetails ? 'border-red-500' : 'border-gray-300'
-                      }`}
-                      rows="3"
-                      placeholder="Please provide details about your previous health insurance (company name, policy period, claims made, etc.)"
-                    />
-                  </FormField>
                 )}
 
-                <FormField label="Preferred Hospitals (Optional)">
-                  <textarea
-                    value={formData.preferredHospitals}
-                    onChange={handlePreferredHospitalsChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent"
-                    rows="2"
-                    placeholder="List any specific hospitals you prefer for treatment"
-                  />
-                </FormField>
+                {/* STEP 1 — Address */}
+                {visibleSteps[step]?.id === 'address' && (
+                  <div>
+                    <h2 className="text-base font-semibold livishield-text-primary mb-4 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 livishield-text-accent" />Address Information
+                    </h2>
+                    <Field label="Street Address" error={errors.address} required>
+                      <textarea value={formData.address} onChange={e => set('address', e.target.value)}
+                        className={ic(errors.address)} rows="2" placeholder="House no., street, area" />
+                    </Field>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-x-4">
+                      <Field label="City" error={errors.city} required>
+                        <input type="text" value={formData.city} onChange={e => set('city', e.target.value)}
+                          className={ic(errors.city)} placeholder="City" />
+                      </Field>
+                      <Field label="State" error={errors.state} required>
+                        <input type="text" value={formData.state} onChange={e => set('state', e.target.value)}
+                          className={ic(errors.state)} placeholder="State" />
+                      </Field>
+                      <Field label="PIN Code" error={errors.pincode} required>
+                        <input type="text" value={formData.pincode} onChange={e => set('pincode', e.target.value)}
+                          className={ic(errors.pincode)} placeholder="6-digit PIN" maxLength="6" />
+                      </Field>
+                    </div>
+                  </div>
+                )}
 
-                <FormField label="Additional Requirements (Optional)">
-                  <textarea
-                    value={formData.additionalRequirements}
-                    onChange={handleAdditionalRequirementsChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 livishield-focus-ring focus:border-transparent"
-                    rows="3"
-                    placeholder="Any specific requirements or questions about the policy"
-                  />
-                </FormField>
-              </div>
+                {/* STEP 2 — Medical */}
+                {visibleSteps[step]?.id === 'medical' && (
+                  <div>
+                    <h2 className="text-base font-semibold livishield-text-primary mb-4 flex items-center gap-2">
+                      <Heart className="h-4 w-4 livishield-text-accent" />Medical Information
+                    </h2>
+                    <Field label="Pre-existing Conditions" error={errors.preExistingConditions} required>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 border rounded-lg bg-gray-50">
+                        {CONDITIONS.map(c => (
+                          <label key={c} className="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox"
+                              checked={formData.preExistingConditions.includes(c)}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  set('preExistingConditions', c === 'None' ? ['None'] : [...formData.preExistingConditions.filter(x => x !== 'None'), c]);
+                                } else {
+                                  set('preExistingConditions', formData.preExistingConditions.filter(x => x !== c));
+                                }
+                              }}
+                              className="rounded border-gray-300" />
+                            <span className="text-xs">{c}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </Field>
+                    <Field label="Current Medications (optional)">
+                      <textarea value={formData.currentMedications} onChange={e => set('currentMedications', e.target.value)}
+                        className={ic(false)} rows="2" placeholder="List any medications you currently take" />
+                    </Field>
+                    <Field label="Previous Health Insurance">
+                      <div className="flex gap-6 mt-1">
+                        {[{v: false, l:'No — first time'},{v: true, l:'Yes — had before'}].map(opt => (
+                          <label key={String(opt.v)} className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="prevIns" checked={formData.previousInsurance === opt.v}
+                              onChange={() => set('previousInsurance', opt.v)} />
+                            <span className="text-sm">{opt.l}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </Field>
+                    {formData.previousInsurance && (
+                      <Field label="Previous Insurance Details" error={errors.previousInsuranceDetails} required>
+                        <textarea value={formData.previousInsuranceDetails} onChange={e => set('previousInsuranceDetails', e.target.value)}
+                          className={ic(errors.previousInsuranceDetails)} rows="2"
+                          placeholder="Company name, policy period, claims made..." />
+                      </Field>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                      <Field label="Preferred Hospitals (optional)">
+                        <textarea value={formData.preferredHospitals} onChange={e => set('preferredHospitals', e.target.value)}
+                          className={ic(false)} rows="2" placeholder="Hospitals you prefer" />
+                      </Field>
+                      <Field label="Additional Requirements (optional)">
+                        <textarea value={formData.additionalRequirements} onChange={e => set('additionalRequirements', e.target.value)}
+                          className={ic(false)} rows="2" placeholder="Any specific requirements" />
+                      </Field>
+                    </div>
+                  </div>
+                )}
 
-              {/* Add-ons Selection */}
-              {plan.addOns && plan.addOns.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2 livishield-text-primary">
-                    <DollarSign className="h-5 w-5 livishield-text-accent" />
-                    <span>Optional Add-ons</span>
-                  </h3>
-                  <p className="text-gray-600 mb-4">Enhance your coverage with these optional add-ons</p>
-                  
-                  <div className="space-y-3">
-                    {plan.addOns.map((addon, index) => (
-                      <div key={index} className="border rounded-lg p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start space-x-3">
-                            <input
-                              type="checkbox"
-                              checked={formData.selectedAddOns.some(a => a.name === addon.name)}
-                              onChange={() => toggleAddOn(addon)}
-                              className="mt-1 rounded border-gray-300 livishield-text-accent livishield-focus-ring"
-                            />
-                            <div>
-                              <h4 className="font-medium">{addon.name}</h4>
-                              <p className="text-sm text-gray-600 mt-1">{addon.description}</p>
-                              {addon.benefits && (
-                                <ul className="text-xs text-gray-500 mt-2 space-y-1">
-                                  {addon.benefits.slice(0, 3).map((benefit, idx) => (
-                                    <li key={idx} className="flex items-center space-x-1">
-                                      <CheckCircle className="h-3 w-3" />
-                                      <span>{benefit}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
+                {/* STEP 3 — Add-ons */}
+                {visibleSteps[step]?.id === 'addons' && (
+                  <div>
+                    <h2 className="text-base font-semibold livishield-text-primary mb-1 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 livishield-text-accent" />Optional Add-ons
+                    </h2>
+                    <p className="text-xs text-gray-500 mb-4">Enhance your coverage — all optional</p>
+                    <div className="space-y-2">
+                      {plan.addOns.map((addon, idx) => {
+                        const sel = formData.selectedAddOns.some(a => a.name === addon.name);
+                        return (
+                          <label key={idx} className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
+                            sel ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-gray-300 bg-white'
+                          }`}>
+                            <input type="checkbox" checked={sel} onChange={() => toggleAddOn(addon)} className="mt-0.5 rounded" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">{addon.name}</p>
+                              <p className="text-xs text-gray-500 mt-0.5">{addon.description}</p>
                             </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-semibold livishield-text-accent">
-                              +{healthInsuranceService.formatCurrency(addon.premium)}
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-semibold livishield-text-accent">+{healthInsuranceService.formatCurrency(addon.premium)}</p>
+                              <p className="text-xs text-gray-400">/year</p>
                             </div>
-                            <div className="text-xs text-gray-500">per year</div>
-                          </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4 — Review */}
+                {visibleSteps[step]?.id === 'review' && (
+                  <div>
+                    <h2 className="text-base font-semibold livishield-text-primary mb-4 flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 livishield-text-accent" />Review & Submit
+                    </h2>
+                    <div className="space-y-4">
+                      {/* Personal */}
+                      <div className="rounded-lg border p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Personal</p>
+                          <button onClick={() => setStep(0)} className="text-xs livishield-text-accent hover:underline">Edit</button>
                         </div>
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                          <span className="text-gray-500">Name</span><span className="font-medium">{formData.firstName} {formData.lastName}</span>
+                          <span className="text-gray-500">Email</span><span className="font-medium truncate">{formData.email}</span>
+                          <span className="text-gray-500">Phone</span><span className="font-medium">{formData.phone}</span>
+                          <span className="text-gray-500">DOB</span><span className="font-medium">{formData.dateOfBirth}</span>
+                          <span className="text-gray-500">Gender</span><span className="font-medium capitalize">{formData.gender}</span>
+                        </div>
+                      </div>
+                      {/* Address */}
+                      <div className="rounded-lg border p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Address</p>
+                          <button onClick={() => setStep(1)} className="text-xs livishield-text-accent hover:underline">Edit</button>
+                        </div>
+                        <p className="text-sm">{formData.address}, {formData.city}, {formData.state} — {formData.pincode}</p>
+                      </div>
+                      {/* Medical */}
+                      <div className="rounded-lg border p-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Medical</p>
+                          <button onClick={() => setStep(2)} className="text-xs livishield-text-accent hover:underline">Edit</button>
+                        </div>
+                        <p className="text-sm"><span className="text-gray-500">Conditions: </span>{formData.preExistingConditions.join(', ') || '—'}</p>
+                        {formData.currentMedications && <p className="text-sm mt-1"><span className="text-gray-500">Medications: </span>{formData.currentMedications}</p>}
+                      </div>
+                      {/* Add-ons */}
+                      {formData.selectedAddOns.length > 0 && (
+                        <div className="rounded-lg border p-4">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Selected Add-ons</p>
+                          {formData.selectedAddOns.map(a => (
+                            <div key={a.name} className="flex justify-between text-sm">
+                              <span>{a.name}</span>
+                              <span className="font-medium livishield-text-accent">+{healthInsuranceService.formatCurrency(a.premium)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Family */}
+                      {formData.familyMembers.length > 0 && (
+                        <div className="rounded-lg border p-4">
+                          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Family Members</p>
+                          {formData.familyMembers.map(m => (
+                            <p key={m.id} className="text-sm capitalize">{m.name} · {m.relationship} · {new Date().getFullYear() - new Date(m.dateOfBirth).getFullYear()} yrs</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── Nav buttons ── */}
+                <div className="flex items-center justify-between mt-6 pt-4 border-t">
+                  <Button variant="outline" onClick={back} disabled={step === 0} className="gap-1">
+                    <ArrowLeft className="h-4 w-4" />Previous
+                  </Button>
+                  {isLastStep ? (
+                    <Button onClick={submitProposal} disabled={isSubmitting} className="livishield-btn-primary gap-2 px-6">
+                      {isSubmitting ? (
+                        <><span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />Submitting...</>
+                      ) : (
+                        <><Shield className="h-4 w-4" />Submit Proposal</>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button onClick={next} className="livishield-btn-primary gap-1 px-6">
+                      Next<ArrowRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ── RIGHT: sticky plan + premium ── */}
+          <div className="w-full lg:w-72 shrink-0">
+            <div className="sticky top-24 space-y-4">
+              {/* Plan summary */}
+              <Card className="livishield-card">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <div className="flex gap-1 mb-1">
+                        {plan.popular && <Badge className="livishield-badge-accent text-xs">Popular</Badge>}
+                        {plan.recommended && <Badge className="livishield-badge-secondary text-xs">Recommended</Badge>}
+                      </div>
+                      <p className="text-sm font-bold livishield-text-primary">{plan.name}</p>
+                      <p className="text-xs livishield-text-secondary">{plan.provider}</p>
+                    </div>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Star className="h-3.5 w-3.5 text-yellow-400 fill-current" />
+                      <span className="text-xs font-medium">{plan.rating}</span>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-xs mb-3">{plan.type}</Badge>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: 'Sum Insured', value: healthInsuranceService.formatCurrency(plan.sumInsured) },
+                      { label: 'Hospitals',   value: `${healthInsuranceService.formatNumber(plan.networkHospitals)}+` },
+                      { label: 'Claim Ratio', value: `${plan.claimSettlementRatio}%` },
+                      { label: 'Renewal Age', value: `Up to ${plan.renewalAge}` },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="bg-gray-50 rounded-lg p-2 text-center">
+                        <p className="text-xs font-semibold livishield-text-primary">{value}</p>
+                        <p className="text-xs text-gray-400">{label}</p>
                       </div>
                     ))}
                   </div>
-                </div>
-              )}
+                </CardContent>
+              </Card>
 
-              {/* Submit Button */}
-              <div className="pt-6 border-t">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-lg font-semibold">Total Annual Premium</p>
-                    <p className="text-2xl font-bold livishield-text-accent">
-                      {healthInsuranceService.formatCurrency(calculateTotalPremium())}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Monthly: {healthInsuranceService.formatCurrency(Math.round(calculateTotalPremium() / 12))}
-                    </p>
-                  </div>
-                </div>
-                
-                <Button
-                  onClick={submitProposal}
-                  disabled={isSubmitting}
-                  className="w-full livishield-btn-primary py-3 text-lg font-semibold"
-                >
-                  {isSubmitting ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Submitting Proposal...</span>
+              {/* Premium breakdown */}
+              <Card className="livishield-card">
+                <CardContent className="p-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Premium Breakdown</p>
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Base</span>
+                      <span className="font-medium">{healthInsuranceService.formatCurrency(plan.premium.annual)}</span>
                     </div>
-                  ) : (
-                    'Submit Proposal'
-                  )}
-                </Button>
-                
-                <p className="text-xs text-gray-500 mt-3 text-center">
-                  By submitting this proposal, you agree to our terms and conditions. 
-                  Your information will be used to process your insurance application.
-                </p>
-              </div>
+                    {plan.type === 'Family' && formData.familyMembers.length > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Family ({formData.familyMembers.length})</span>
+                        <span className="font-medium">+{healthInsuranceService.formatCurrency(Math.round(formData.familyMembers.length * plan.premium.annual * 0.3))}</span>
+                      </div>
+                    )}
+                    {formData.selectedAddOns.map(a => (
+                      <div key={a.name} className="flex justify-between">
+                        <span className="text-gray-500 truncate mr-2 max-w-[120px]">{a.name}</span>
+                        <span className="font-medium shrink-0">+{healthInsuranceService.formatCurrency(a.premium)}</span>
+                      </div>
+                    ))}
+                    <div className="border-t pt-2 mt-1">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-sm font-semibold">Total / year</span>
+                        <span className="text-lg font-bold livishield-text-accent">{healthInsuranceService.formatCurrency(total)}</span>
+                      </div>
+                      <p className="text-xs text-gray-400 text-right">{healthInsuranceService.formatCurrency(Math.round(total/12))} / month</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <p className="text-xs text-gray-400 text-center px-2">
+                By submitting you agree to our terms and conditions.
+              </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+        </div>
       </div>
     </div>
   );

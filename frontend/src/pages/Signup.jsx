@@ -112,7 +112,7 @@ const Signup = () => {
             <Shield className="h-12 w-12 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">LiviShield</h1>
-          <p className="text-white/80 text-lg">Car & Health Insurance Protection</p>
+          <p className="text-white/80 text-lg">Health Insurance Protection</p>
         </div>
         
         <Card className="signup-card-shadow">

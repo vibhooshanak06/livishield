@@ -186,3 +186,24 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(0, 180, 216, 0.15);
 }
+
+/* Focus ring for form inputs */
+.livishield-focus-ring:focus {
+  outline: none;
+  ring-color: #00b4d8;
+  box-shadow: 0 0 0 3px rgba(0, 180, 216, 0.2);
+}
+
+/* Badge accent variant */
+.livishield-badge-accent {
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 100%);
+  color: white;
+  border: none;
+}
+
+/* Ring (outline) for featured plan highlight */
+.livishield-ring-accent {
+  --tw-ring-color: #00b4d8;
+  ring-color: #00b4d8;
+  outline: 2px solid #00b4d8;
+}
