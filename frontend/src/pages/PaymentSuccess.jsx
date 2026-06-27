@@ -94,6 +94,29 @@ const PaymentSuccess = () => {
                 </div>
               )}
             </div>
+
+            {/* GST breakdown */}
+            {data.breakdown && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Payment Receipt</p>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between text-gray-500">
+                    <span>Net Premium</span>
+                    <span>{paymentService.formatCurrency(data.breakdown.basePremium)}</span>
+                  </div>
+                  <div className="flex justify-between text-amber-700">
+                    <span className="flex items-center gap-1">
+                      GST <span className="text-xs bg-amber-100 border border-amber-200 rounded px-1">{data.breakdown.gstRate}%</span>
+                    </span>
+                    <span>+{paymentService.formatCurrency(data.breakdown.gstAmount)}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-1.5 font-bold">
+                    <span className="livishield-text-primary">Total Paid</span>
+                    <span className="livishield-text-accent">{paymentService.formatCurrency(data.breakdown.totalPayable)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

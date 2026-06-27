@@ -25,6 +25,7 @@ const PaymentPage = () => {
   const { user }        = useAuth();
 
   const [proposal,   setProposal]   = useState(null);
+  const [orderData,  setOrderData]  = useState(null);   // holds breakdown from backend
   const [loading,    setLoading]    = useState(true);
   const [paying,     setPaying]     = useState(false);
   const [error,      setError]      = useState(null);
@@ -53,24 +54,23 @@ const PaymentPage = () => {
     setPaying(true);
     setError(null);
     try {
-      const { data: orderData } = await paymentService.createOrder(proposalId);
+      const { data: od } = await paymentService.createOrder(proposalId);
+      setOrderData(od);  // store breakdown for display
 
       const options = {
-        key:         orderData.keyId,
-        amount:      orderData.amount,
-        currency:    orderData.currency,
+        key:         od.keyId,
+        amount:      od.amount,      // paise (includes GST)
+        currency:    od.currency,
         name:        'LiviShield Health Insurance',
-        description: orderData.description,
-        order_id:    orderData.orderId,
+        description: od.description,
+        order_id:    od.orderId,
         prefill: {
-          name:    orderData.prefill.name,
-          email:   orderData.prefill.email,
-          contact: orderData.prefill.contact,
+          name:    od.prefill.name,
+          email:   od.prefill.email,
+          contact: od.prefill.contact,
         },
         theme: { color: '#00b4d8' },
-        modal: {
-          ondismiss: () => setPaying(false),
-        },
+        modal: { ondismiss: () => setPaying(false) },
         handler: async (response) => {
           try {
             const { data: verifyData } = await paymentService.verifyPayment({
@@ -81,9 +81,10 @@ const PaymentPage = () => {
             navigate('/payment-success', {
               state: {
                 proposalId,
-                proposalNumber: orderData.proposalNumber,
-                planName:       orderData.planName,
-                amountPaid:     orderData.amount / 100,
+                proposalNumber: od.proposalNumber,
+                planName:       od.planName,
+                amountPaid:     verifyData.amountPaid,
+                breakdown:      od.breakdown,
                 paymentId:      response.razorpay_payment_id,
                 policyDetails:  verifyData.policyDetails,
               },
@@ -218,37 +219,62 @@ const PaymentPage = () => {
                   <Lock className="h-4 w-4 text-gray-400 ml-auto" />
                 </div>
 
-                <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Plan</span>
-                    <span className="font-medium text-gray-800">{proposal?.plan_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Proposal No.</span>
-                    <span className="font-mono text-gray-800">{proposal?.proposal_number}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Policyholder</span>
-                    <span className="font-medium text-gray-800">{pi.firstName} {pi.lastName}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2 mt-2">
-                    <span className="font-semibold text-gray-700">Annual Premium</span>
-                    <span className="font-bold text-lg livishield-text-accent">
-                      {paymentService.formatCurrency(amount)}
-                    </span>
-                  </div>
-                </div>
+                {/* Order summary with GST */}
+                {(() => {
+                  const base     = pm.totalAnnualPremium || 0;
+                  const gst      = Math.round(base * 0.18 * 100) / 100;
+                  const total    = Math.round((base + gst) * 100) / 100;
+                  return (
+                    <div className="bg-gray-50 rounded-xl p-4 mb-5 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Plan</span>
+                        <span className="font-medium text-gray-800">{proposal?.plan_name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Proposal No.</span>
+                        <span className="font-mono text-gray-800">{proposal?.proposal_number}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Policyholder</span>
+                        <span className="font-medium text-gray-800">{pi.firstName} {pi.lastName}</span>
+                      </div>
+                      <div className="border-t pt-2 mt-1 space-y-1.5">
+                        <div className="flex justify-between text-gray-500">
+                          <span>Net Premium</span>
+                          <span>{paymentService.formatCurrency(base)}</span>
+                        </div>
+                        <div className="flex justify-between text-amber-700">
+                          <span className="flex items-center gap-1">
+                            GST <span className="text-xs bg-amber-100 border border-amber-200 rounded px-1">18%</span>
+                          </span>
+                          <span>+{paymentService.formatCurrency(gst)}</span>
+                        </div>
+                        <div className="flex justify-between border-t pt-1.5 font-bold text-base">
+                          <span className="livishield-text-primary">Total Payable</span>
+                          <span className="livishield-text-accent">{paymentService.formatCurrency(total)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
 
-                <Button
-                  className="w-full livishield-btn-primary gap-2 py-3 text-base"
-                  disabled={paying || !sdkReady}
-                  onClick={handlePay}
-                >
-                  {paying
-                    ? <><Loader2 className="h-5 w-5 animate-spin" />Processing...</>
-                    : <><CreditCard className="h-5 w-5" />Pay {paymentService.formatCurrency(amount)}</>
-                  }
-                </Button>
+                {/* Pay button shows GST-inclusive total */}
+                {(() => {
+                  const base  = pm.totalAnnualPremium || 0;
+                  const total = Math.round(base * 1.18 * 100) / 100;
+                  return (
+                    <Button
+                      className="w-full livishield-btn-primary gap-2 py-3 text-base"
+                      disabled={paying || !sdkReady}
+                      onClick={handlePay}
+                    >
+                      {paying
+                        ? <><Loader2 className="h-5 w-5 animate-spin" />Processing...</>
+                        : <><CreditCard className="h-5 w-5" />Pay {paymentService.formatCurrency(total)}</>
+                      }
+                    </Button>
+                  );
+                })()}
 
                 <p className="text-center text-xs text-gray-400 mt-3 flex items-center justify-center gap-1">
                   <Lock className="h-3 w-3" />
@@ -303,22 +329,53 @@ const PaymentPage = () => {
             <Card className="livishield-card">
               <CardContent className="p-4">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment Summary</p>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Base Premium</span>
-                    <span>{paymentService.formatCurrency(pm.basePremium || 0)}</span>
-                  </div>
-                  {(pm.addOnPremium || 0) > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Add-ons</span>
-                      <span>{paymentService.formatCurrency(pm.addOnPremium)}</span>
+                {(() => {
+                  // Use live breakdown from order if available, else compute from proposal
+                  const bd = orderData?.breakdown;
+                  const base  = bd?.basePremium  ?? (pm.basePremium || 0);
+                  const addOn = bd ? 0 : (pm.addOnPremium || 0);  // addOn already baked into basePremium
+                  const netPremium = bd?.basePremium ?? ((pm.basePremium || 0) + (pm.addOnPremium || 0));
+                  const gstAmt  = bd?.gstAmount  ?? Math.round(netPremium * 0.18 * 100) / 100;
+                  const total   = bd?.totalPayable ?? (netPremium + gstAmt);
+                  return (
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Base Premium</span>
+                        <span>{paymentService.formatCurrency(pm.basePremium || 0)}</span>
+                      </div>
+                      {(pm.addOnPremium || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Add-on Premium</span>
+                          <span>{paymentService.formatCurrency(pm.addOnPremium)}</span>
+                        </div>
+                      )}
+                      {(pm.familyPremium || 0) > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">Family Member Premium</span>
+                          <span>{paymentService.formatCurrency(pm.familyPremium)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-gray-500 border-t pt-2">
+                        <span>Net Premium</span>
+                        <span>{paymentService.formatCurrency(netPremium)}</span>
+                      </div>
+                      <div className="flex justify-between text-amber-700 bg-amber-50 -mx-1 px-1 py-1 rounded">
+                        <span className="flex items-center gap-1">
+                          <span>GST</span>
+                          <span className="text-xs bg-amber-200 text-amber-800 rounded px-1">18%</span>
+                        </span>
+                        <span>+{paymentService.formatCurrency(gstAmt)}</span>
+                      </div>
+                      <div className="flex justify-between border-t-2 border-gray-300 pt-2 font-bold text-base">
+                        <span className="livishield-text-primary">Total Payable</span>
+                        <span className="livishield-text-accent">{paymentService.formatCurrency(total)}</span>
+                      </div>
+                      <p className="text-xs text-gray-400 text-center pt-1">
+                        Inclusive of 18% GST as per IRDAI guidelines
+                      </p>
                     </div>
-                  )}
-                  <div className="flex justify-between border-t pt-2 font-semibold">
-                    <span>Total Due</span>
-                    <span className="livishield-text-accent">{paymentService.formatCurrency(amount)}</span>
-                  </div>
-                </div>
+                  );
+                })()}
               </CardContent>
             </Card>
           </div>

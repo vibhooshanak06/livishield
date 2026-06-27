@@ -38,15 +38,23 @@ const CustomerDashboard = () => {
     try {
       setLoading(true);
       setError(null);
-      
-      if (!user?.id) {
-        throw new Error('User ID not found. Please log in again.');
+      if (!user?.id) throw new Error('User ID not found. Please log in again.');
+
+      // Fetch proposals and payments in parallel
+      const [dashData, paymentsData] = await Promise.allSettled([
+        proposalService.getCustomerDashboard(user.id),
+        paymentService.getUserPayments(),
+      ]);
+
+      if (dashData.status === 'fulfilled') {
+        setProposals(dashData.value.proposals);
+        setStats(dashData.value.stats);
+      } else {
+        throw new Error(dashData.reason?.message || 'Failed to load proposals');
       }
-      
-      const data = await proposalService.getCustomerDashboard(user.id);
-      
-      setProposals(data.proposals);
-      setStats(data.stats);
+      if (paymentsData.status === 'fulfilled') {
+        setPayments(paymentsData.value.data || []);
+      }
     } catch (error) {
       setError(error.message || 'Failed to load dashboard data');
     } finally {
@@ -231,6 +239,19 @@ const CustomerDashboard = () => {
                 })}
               >
                 <Upload className="h-4 w-4" />Upload Docs
+              </Button>
+            )}
+            {proposal.status === 'approved' && proposal.payment_status !== 'paid' && (
+              <Button
+                size="sm" className="flex-1 gap-1.5 bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => navigate(`/proposals/${proposal._id}/pay`)}
+              >
+                <CreditCard className="h-4 w-4" />Pay Now
+              </Button>
+            )}
+            {proposal.status === 'policy_issued' && (
+              <Button size="sm" variant="outline" className="flex-1 gap-1.5 text-green-700 border-green-300">
+                <BadgeCheck className="h-4 w-4" />Policy Active
               </Button>
             )}
           </div>
@@ -439,104 +460,138 @@ const CustomerDashboard = () => {
         );
 
       case 'payments':
-        const policiesWithPremiums = proposals.filter(p => p.premiumDetails?.totalAnnualPremium > 0);
-        const totalPremiumPaid = proposals
-          .filter(p => ['approved','policy_issued'].includes(p.status))
-          .reduce((sum, p) => sum + (p.premiumDetails?.totalAnnualPremium || 0), 0);
+        const paidPayments    = payments.filter(p => p.status === 'paid');
+        const pendingPayments = proposals.filter(p =>
+          p.status === 'approved' && p.payment_status !== 'paid'
+        );
+        const totalPaid = paidPayments.reduce((s, p) => s + parseFloat(p.amount || 0), 0);
+
         return (
           <div className="space-y-6">
-            {/* Summary cards */}
+            {/* Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <Card><CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold livishield-text-accent">{policiesWithPremiums.length}</p>
-                <p className="text-sm livishield-text-secondary">Total Proposals</p>
+                <p className="text-2xl font-bold text-green-600">{paymentService.formatCurrency(totalPaid)}</p>
+                <p className="text-sm livishield-text-secondary">Total Premiums Paid</p>
               </CardContent></Card>
               <Card><CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-green-600">
-                  {proposalService.formatCurrency(totalPremiumPaid)}
-                </p>
-                <p className="text-sm livishield-text-secondary">Active Policy Premiums</p>
+                <p className="text-2xl font-bold livishield-text-accent">{paidPayments.length}</p>
+                <p className="text-sm livishield-text-secondary">Successful Payments</p>
               </CardContent></Card>
               <Card><CardContent className="p-4 text-center">
-                <p className="text-2xl font-bold text-blue-600">
-                  {proposals.filter(p => p.status === 'approved').length}
-                </p>
-                <p className="text-sm livishield-text-secondary">Active Policies</p>
+                <p className="text-2xl font-bold text-amber-600">{pendingPayments.length}</p>
+                <p className="text-sm livishield-text-secondary">Awaiting Payment</p>
               </CardContent></Card>
             </div>
 
-            {policiesWithPremiums.length === 0 ? (
-              <div className="text-center py-12">
-                <CreditCard className="h-12 w-12 livishield-text-secondary mx-auto mb-4" />
-                <h3 className="text-lg font-medium livishield-text-primary mb-2">No Payment Records</h3>
-                <p className="livishield-text-secondary mb-4">Submit a health insurance proposal to see premium details here.</p>
-                <Button className="livishield-btn-primary" onClick={() => navigate('/health-insurance/plans')}>
-                  Browse Health Plans
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <h3 className="font-semibold livishield-text-primary">Premium Summary</h3>
-                {policiesWithPremiums.map((proposal) => (
-                  <Card key={proposal._id} className="livishield-card">
-                    <CardContent className="p-5">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h4 className="font-semibold livishield-text-primary">{proposal.planId?.name}</h4>
-                          <p className="text-xs livishield-text-secondary">{proposal.planId?.provider}</p>
-                          <p className="text-xs livishield-text-secondary font-mono mt-1">{proposal.proposalNumber}</p>
+            {/* Pending payments — Pay Now */}
+            {pendingPayments.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold livishield-text-primary flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 text-amber-500" />
+                  Action Required — Pay Premium
+                </h3>
+                {pendingPayments.map(p => {
+                  const pm   = p.premiumDetails || {};
+                  const base = pm.totalAnnualPremium || 0;
+                  const gst  = Math.round(base * 0.18 * 100) / 100;
+                  const total= Math.round((base + gst) * 100) / 100;
+                  return (
+                    <Card key={p._id} className="border-amber-200 bg-amber-50 livishield-card">
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <p className="font-semibold livishield-text-primary">{p.planId?.name}</p>
+                            <p className="text-xs livishield-text-secondary font-mono">{p.proposalNumber}</p>
+                            <div className="flex items-center gap-3 mt-2 text-xs text-gray-600 flex-wrap">
+                              <span>Net: {paymentService.formatCurrency(base)}</span>
+                              <span className="text-amber-700">+ GST 18%: {paymentService.formatCurrency(gst)}</span>
+                              <span className="font-bold livishield-text-accent">Total: {paymentService.formatCurrency(total)}</span>
+                            </div>
+                          </div>
+                          <Button size="sm" className="livishield-btn-primary gap-1.5 shrink-0"
+                            onClick={() => navigate(`/proposals/${p._id}/pay`)}>
+                            <CreditCard className="h-3.5 w-3.5" />Pay Now
+                          </Button>
                         </div>
-                        <Badge className={`text-xs ${getStatusColor(proposal.status)}`}>
-                          {formatStatus(proposal.status)}
-                        </Badge>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                        <div className="bg-gray-50 rounded-lg p-3 text-center">
-                          <p className="font-bold livishield-text-accent text-base">
-                            {proposalService.formatCurrency(proposal.premiumDetails?.basePremium || 0)}
-                          </p>
-                          <p className="text-xs livishield-text-secondary">Base Premium/yr</p>
-                        </div>
-                        <div className="bg-gray-50 rounded-lg p-3 text-center">
-                          <p className="font-bold livishield-text-accent text-base">
-                            {proposalService.formatCurrency(proposal.premiumDetails?.addOnPremium || 0)}
-                          </p>
-                          <p className="text-xs livishield-text-secondary">Add-on Premium/yr</p>
-                        </div>
-                        <div className="bg-blue-50 rounded-lg p-3 text-center">
-                          <p className="font-bold text-blue-700 text-base">
-                            {proposalService.formatCurrency(proposal.premiumDetails?.totalAnnualPremium || 0)}
-                          </p>
-                          <p className="text-xs livishield-text-secondary">Total Annual</p>
-                        </div>
-                        <div className="bg-green-50 rounded-lg p-3 text-center">
-                          <p className="font-bold text-green-700 text-base">
-                            {proposalService.formatCurrency(proposal.premiumDetails?.totalMonthlyPremium || 0)}
-                          </p>
-                          <p className="text-xs livishield-text-secondary">Monthly Est.</p>
-                        </div>
-                      </div>
-                      {proposal.policyDetails?.policyNumber && (
-                        <div className="mt-3 pt-3 border-t flex items-center justify-between text-xs">
-                          <span className="livishield-text-secondary">Policy Number:</span>
-                          <span className="font-mono font-semibold livishield-text-primary">{proposal.policyDetails.policyNumber}</span>
-                        </div>
-                      )}
-                      {proposal.submittedAt && (
-                        <div className="flex items-center justify-between text-xs mt-1">
-                          <span className="livishield-text-secondary">Submitted:</span>
-                          <span className="livishield-text-primary">{proposalService.formatDate(proposal.submittedAt)}</span>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700">
-                  <p className="font-semibold mb-1">Payment Information</p>
-                  <p className="text-xs">Premium payments are processed at policy issuance. Contact <a href="mailto:support@livishield.com" className="underline">support@livishield.com</a> for payment enquiries.</p>
-                </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
+
+            {/* Payment history */}
+            <div className="space-y-3">
+              <h3 className="font-semibold livishield-text-primary">Payment History</h3>
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-7 w-7 border-b-2 livishield-border-accent mx-auto mb-3" />
+                  <p className="text-sm livishield-text-secondary">Loading payments...</p>
+                </div>
+              ) : paidPayments.length === 0 ? (
+                <div className="text-center py-10">
+                  <CreditCard className="h-10 w-10 livishield-text-secondary mx-auto mb-3" />
+                  <p className="font-medium livishield-text-primary mb-1">No payments yet</p>
+                  <p className="text-sm livishield-text-secondary">
+                    {pendingPayments.length > 0
+                      ? 'You have approved proposals above waiting for payment.'
+                      : 'Payments will appear here once a proposal is approved and paid.'}
+                  </p>
+                </div>
+              ) : (
+                paidPayments.map(pay => {
+                  const gst   = Math.round(parseFloat(pay.amount) * (18/118) * 100) / 100;
+                  const net   = Math.round((parseFloat(pay.amount) - gst) * 100) / 100;
+                  return (
+                    <Card key={pay.id} className="livishield-card">
+                      <CardContent className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <p className="font-semibold livishield-text-primary">{pay.planName}</p>
+                            <p className="text-xs livishield-text-secondary">{pay.planProvider}</p>
+                            <p className="text-xs livishield-text-secondary font-mono mt-0.5">{pay.proposalNumber}</p>
+                          </div>
+                          <Badge className="text-xs bg-green-100 text-green-700 border-green-200 gap-1 shrink-0">
+                            <CheckCircle className="h-3 w-3" />Paid
+                          </Badge>
+                        </div>
+
+                        {/* GST breakdown */}
+                        <div className="bg-gray-50 rounded-lg p-3 text-xs space-y-1.5 mb-3">
+                          <div className="flex justify-between text-gray-500">
+                            <span>Net Premium</span><span>{paymentService.formatCurrency(net)}</span>
+                          </div>
+                          <div className="flex justify-between text-amber-700">
+                            <span>GST (18%)</span><span>+{paymentService.formatCurrency(gst)}</span>
+                          </div>
+                          <div className="flex justify-between font-bold border-t pt-1.5 text-sm">
+                            <span className="livishield-text-primary">Total Paid</span>
+                            <span className="livishield-text-accent">{paymentService.formatCurrency(pay.amount)}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-gray-500 flex-wrap gap-2">
+                          <span>
+                            {pay.paymentMethod && (
+                              <span className="capitalize bg-gray-100 rounded px-2 py-0.5 mr-2">{pay.paymentMethod}</span>
+                            )}
+                            {pay.paidAt && new Date(pay.paidAt).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' })}
+                          </span>
+                          {pay.razorpayPaymentId && (
+                            <span className="font-mono text-gray-400 truncate max-w-[200px]">{pay.razorpayPaymentId}</span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+
+            <p className="text-xs text-center text-gray-400 pb-2">
+              All amounts include 18% GST as per IRDAI mandate · Powered by Razorpay
+            </p>
           </div>
         );
 

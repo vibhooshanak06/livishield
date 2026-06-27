@@ -46,12 +46,17 @@ class PaymentService {
       throw Object.assign(new Error('Premium for this proposal has already been paid'), { statusCode: 400 });
 
     const premiumDetails = parseJSON(proposal.premium_details, {});
-    const amount         = Math.round((premiumDetails.totalAnnualPremium || proposal.premium_annual || 0) * 100); // paise
-    if (amount <= 0) throw Object.assign(new Error('Invalid premium amount'), { statusCode: 400 });
+    const basePremium    = premiumDetails.totalAnnualPremium || proposal.premium_annual || 0;
+    const GST_RATE       = 0.18;  // 18% GST on health insurance premium (IRDAI mandate)
+    const gstAmount      = Math.round(basePremium * GST_RATE * 100) / 100;
+    const totalPayable   = Math.round((basePremium + gstAmount) * 100) / 100;
+    const amountPaise    = Math.round(totalPayable * 100); // Razorpay expects paise
+
+    if (amountPaise <= 0) throw Object.assign(new Error('Invalid premium amount'), { statusCode: 400 });
 
     const rzp   = getRazorpay();
     const order = await rzp.orders.create({
-      amount,
+      amount:   amountPaise,
       currency: 'INR',
       receipt:  `rcpt_${proposalId.slice(0, 10)}_${Date.now()}`,
       notes: {
@@ -59,6 +64,9 @@ class PaymentService {
         proposalNumber: proposal.proposal_number,
         userId:         String(userId),
         planName:       proposal.plan_name || '',
+        basePremium:    basePremium.toString(),
+        gstAmount:      gstAmount.toString(),
+        gstRate:        '18%',
       },
     });
 
@@ -68,7 +76,7 @@ class PaymentService {
       proposalId,
       userId:          String(userId),
       razorpayOrderId: order.id,
-      amount:          amount / 100,
+      amount:          totalPayable,
       currency:        'INR',
     });
 
@@ -79,12 +87,19 @@ class PaymentService {
 
     return {
       orderId:        order.id,
-      amount:         order.amount,   // paise
+      amount:         order.amount,        // paise — for Razorpay SDK
       currency:       order.currency,
       keyId:          process.env.RAZORPAY_KEY_ID,
       proposalNumber: proposal.proposal_number,
       planName:       proposal.plan_name,
       description:    `Annual premium for ${proposal.plan_name}`,
+      // Tax breakdown for UI display
+      breakdown: {
+        basePremium,
+        gstRate:     18,
+        gstAmount,
+        totalPayable,
+      },
       prefill: {
         name:    parseJSON(proposal.personal_info, {}).firstName || '',
         email:   parseJSON(proposal.personal_info, {}).email     || '',
@@ -144,7 +159,7 @@ class PaymentService {
       proposalId:     payment.proposal_id,
       proposalNumber: proposal.proposal_number,
       planName:       proposal.plan_name,
-      amountPaid:     payment.amount,
+      amountPaid:     payment.amount,   // already includes GST (stored at order creation)
       paymentId:      razorpayPaymentId,
       policyDetails:  parseJSON(proposal.policy_details, null),
     };
