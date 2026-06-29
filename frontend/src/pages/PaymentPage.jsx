@@ -291,9 +291,11 @@ const PaymentPage = () => {
                   <div>
                     <p className="text-sm font-semibold text-blue-800 mb-1.5">Test Mode — No real money charged</p>
                     <div className="text-xs text-blue-700 space-y-1 font-mono">
-                      <p>Card: <strong>4111 1111 1111 1111</strong></p>
-                      <p>Expiry: any future date &nbsp; CVV: any 3 digits</p>
-                      <p>OTP: <strong>123456</strong></p>
+                      <p>Card: <strong>4100 2800 0000 1007</strong> &nbsp;(Visa India)</p>
+                      <p>Expiry: <strong>12/28</strong> &nbsp; CVV: <strong>123</strong></p>
+                      
+                      <p className="pt-1 font-sans text-blue-600">— or use UPI —</p>
+                      <p>UPI ID: <strong>success@razorpay</strong></p>
                     </div>
                   </div>
                 </div>
