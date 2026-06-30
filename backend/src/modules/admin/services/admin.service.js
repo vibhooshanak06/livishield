@@ -6,6 +6,7 @@
 const { randomUUID } = require('crypto');
 const repo   = require('../repositories/admin.repository');
 const logger = require('../../../utils/logger');
+const mailer = require('../../../utils/mailer');
 
 const parseJSON = (v, fb = null) => {
   if (v === null || v === undefined) return fb;
@@ -128,6 +129,25 @@ class AdminService {
       policy_details: JSON.stringify({ policyNumber, policyStartDate: policyStart, policyEndDate: policyEnd, issuedAt: new Date(), issuedBy: adminId }),
     });
     logger.info(`Proposal ${p.proposal_number} approved → policy ${policyNumber}`);
+
+    // Fire-and-forget: notify customer that proposal is approved — pay now
+    const pi = parseJSON(p.required_documents, null); // personal_info not in min query
+    const fullProposal = await repo.findProposalDetail(id);
+    if (fullProposal) {
+      const piData = parseJSON(fullProposal.personal_info, {});
+      const pmData = parseJSON(fullProposal.premium_details, {});
+      const base   = pmData.totalAnnualPremium || 0;
+      const total  = Math.round(base * 1.18 * 100) / 100;
+      mailer.sendProposalApprovedEmail({
+        to:           piData.email,
+        firstName:    piData.firstName,
+        planName:     fullProposal.plan_name,
+        proposalNumber: p.proposal_number,
+        proposalId:   id,
+        totalPayable: total,
+      });
+    }
+
     return { proposalNumber: p.proposal_number, policyNumber, status: 'approved' };
   }
 

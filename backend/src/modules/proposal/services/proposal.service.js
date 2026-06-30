@@ -3,11 +3,12 @@
  * proposal.service.js — business logic, no req/res, no direct DB.
  */
 const { randomUUID } = require('crypto');
-const path           = require('path');
-const fs             = require('fs');
-const repo           = require('../repositories/proposal.repository');
+const path             = require('path');
+const fs               = require('fs');
+const repo             = require('../repositories/proposal.repository');
 const DocumentAuditLog = require('../../../models/DocumentAuditLog');
-const logger         = require('../../../utils/logger');
+const logger           = require('../../../utils/logger');
+const mailer           = require('../../../utils/mailer');
 
 const DOC_WINDOW_MS        = 48 * 60 * 60 * 1000;
 const REACTIVATION_DAYS    = 7;
@@ -78,6 +79,15 @@ class ProposalService {
       familyMembers: familyMembers || [], medicalInfo,
       selectedAddOns: selectedAddOns || [], premiumDetails,
       requiredDocuments, statusHistory });
+
+    // Fire-and-forget: send proposal submitted email
+    mailer.sendProposalSubmittedEmail({
+      to:                personalInfo.email,
+      firstName:         personalInfo.firstName,
+      planName:          plan.name,
+      proposalNumber,
+      requiredDocuments,
+    });
 
     return { proposalNumber, proposalId: id, status: 'submitted', requiredDocuments, submittedAt: new Date().toISOString() };
   }

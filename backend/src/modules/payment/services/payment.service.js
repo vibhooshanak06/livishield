@@ -1,9 +1,10 @@
 'use strict';
-const Razorpay    = require('razorpay');
-const crypto      = require('crypto');
+const Razorpay       = require('razorpay');
+const crypto         = require('crypto');
 const { randomUUID } = require('crypto');
-const repo        = require('../repositories/payment.repository');
-const logger      = require('../../../utils/logger');
+const repo           = require('../repositories/payment.repository');
+const logger         = require('../../../utils/logger');
+const mailer         = require('../../../utils/mailer');
 
 const parseJSON = (v, fb = null) => {
   if (!v) return fb;
@@ -151,15 +152,35 @@ class PaymentService {
       timestamp: new Date(),
     });
     await repo.updateProposalToPolicyIssued(payment.proposal_id, history);
-
     logger.info(`Payment ${razorpayPaymentId} verified. Proposal ${proposal.proposal_number} → policy_issued`);
+
+    // Fire-and-forget: send policy issued / payment success email
+    const pi      = parseJSON(proposal.personal_info, {});
+    const pm      = parseJSON(proposal.premium_details, {});
+    const pol     = parseJSON(proposal.policy_details, null);
+    const base    = pm.totalAnnualPremium || 0;
+    const gst     = Math.round(base * 0.18 * 100) / 100;
+    mailer.sendPolicyIssuedEmail({
+      to:               pi.email,
+      firstName:        pi.firstName,
+      planName:         proposal.plan_name,
+      proposalNumber:   proposal.proposal_number,
+      policyNumber:     pol?.policyNumber,
+      policyStartDate:  pol?.policyStartDate,
+      policyEndDate:    pol?.policyEndDate,
+      amountPaid:       payment.amount,
+      gstAmount:        gst,
+      netPremium:       base,
+      paymentId:        razorpayPaymentId,
+      paymentMethod:    rzpPayment.method,
+    });
 
     return {
       success:        true,
       proposalId:     payment.proposal_id,
       proposalNumber: proposal.proposal_number,
       planName:       proposal.plan_name,
-      amountPaid:     payment.amount,   // already includes GST (stored at order creation)
+      amountPaid:     payment.amount,
       paymentId:      razorpayPaymentId,
       policyDetails:  parseJSON(proposal.policy_details, null),
     };
