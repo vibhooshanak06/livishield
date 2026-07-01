@@ -30,6 +30,7 @@ const mapProposalRow = (r) => ({
   _id:               r.id,
   proposalNumber:    r.proposal_number,
   status:            r.status,
+  payment_status:    r.payment_status || 'not_required',
   submittedAt:       r.submitted_at,
   updatedAt:         r.updated_at,
   planId: {

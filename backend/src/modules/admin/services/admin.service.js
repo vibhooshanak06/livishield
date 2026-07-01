@@ -7,7 +7,6 @@ const { randomUUID } = require('crypto');
 const repo   = require('../repositories/admin.repository');
 const logger = require('../../../utils/logger');
 const mailer = require('../../../utils/mailer');
-
 const parseJSON = (v, fb = null) => {
   if (v === null || v === undefined) return fb;
   if (typeof v === 'object') return v;
@@ -131,7 +130,6 @@ class AdminService {
     logger.info(`Proposal ${p.proposal_number} approved → policy ${policyNumber}`);
 
     // Fire-and-forget: notify customer that proposal is approved — pay now
-    const pi = parseJSON(p.required_documents, null); // personal_info not in min query
     const fullProposal = await repo.findProposalDetail(id);
     if (fullProposal) {
       const piData = parseJSON(fullProposal.personal_info, {});
@@ -166,6 +164,21 @@ class AdminService {
       rejection_details: JSON.stringify({ reason, detailedReason: detailedReason||null, rejectedAt: new Date(), rejectedBy: adminId }),
     });
     logger.info(`Proposal ${p.proposal_number} rejected by admin ${adminId}`);
+
+    // Fire-and-forget: notify customer of rejection
+    const fullP = await repo.findProposalDetail(id);
+    if (fullP) {
+      const piData = parseJSON(fullP.personal_info, {});
+      mailer.sendProposalRejectedEmail({
+        to:             piData.email,
+        firstName:      piData.firstName,
+        planName:       fullP.plan_name,
+        proposalNumber: p.proposal_number,
+        reason,
+        detailedReason: detailedReason || null,
+      });
+    }
+
     return { proposalNumber: p.proposal_number, status: 'rejected' };
   }
 
