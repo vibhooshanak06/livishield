@@ -1,187 +1,82 @@
-# LiviShield Backend - Authentication System
+# LiviShield Backend
 
-Clean authentication and authorization system built with Node.js, Express, MySQL, and MongoDB.
+Node.js + Express REST API for the LiviShield Health Insurance platform.
 
-## 🏗️ Architecture
+## Stack
 
-### Database Strategy
-- **MySQL**: User authentication and management
-- **MongoDB**: Available for future features (currently unused)
+- **Runtime:** Node.js 18+
+- **Framework:** Express 4
+- **Primary DB:** MySQL 8 (ACID, relational — all business data)
+- **Secondary DB:** MongoDB (append-only document audit log)
+- **Auth:** JWT (Bearer token in Authorization header)
+- **Payments:** Razorpay (orders, signature verification, webhooks)
+- **Email:** Nodemailer via Gmail SMTP
+- **Uploads:** Multer (disk storage)
+- **Logging:** Winston (console only)
 
-### Focus
-LiviShield Authentication System provides:
-- **🔐 User Registration**: Secure account creation
-- **🔑 User Login**: JWT-based authentication
-- **👤 User Management**: Profile and role management
-- **🛡️ Authorization**: Role-based access control
+## Architecture
 
-## 📁 Project Structure
+Clean feature-based module architecture: `Route → Controller → Service → Repository → DB`
+
+- **Controllers** handle only request/response parsing
+- **Services** contain all business logic
+- **Repositories** contain all SQL/MongoDB queries — controllers never touch the DB directly
 
 ```
-backend/
-├── src/
-│   ├── config/          # Database configurations
-│   │   ├── mysql.js     # MySQL connection
-│   │   └── mongodb.js   # MongoDB connection (optional)
-│   ├── controllers/     # Route controllers
-│   │   └── authController.js # Authentication logic
-│   ├── middleware/      # Custom middleware
-│   │   ├── auth.js      # Authentication & authorization
-│   │   └── errorHandler.js # Global error handling
-│   ├── routes/          # API routes
-│   │   └── authRoutes.js # Authentication endpoints
-│   ├── utils/           # Utility functions
-│   │   ├── helpers.js   # Common utilities
-│   │   ├── logger.js    # Winston logger setup
-│   │   └── validation.js # Joi validation schemas
-│   └── app.js           # Express app configuration
-├── database_schema.sql  # MySQL schema
-├── .env                 # Environment variables
-├── package.json         # Dependencies
-├── server.js            # Server entry point
-└── README.md
+src/modules/
+├── auth/          register, login, profile, password change
+├── health-insurance/  plan catalog, filtering, compare, statistics
+├── proposal/      submit, document upload/delete/submit, expiry, reactivation
+├── admin/         underwriting queue, doc verification, user mgmt, plan mgmt
+└── payment/       Razorpay orders, verify, webhook, payment history
 ```
 
-## 🚀 Getting Started
+## Quick Start
 
-### Prerequisites
-- Node.js (v18+)
-- MySQL (v8+)
-- MongoDB (v6+) - Optional
+```bash
+npm install
 
-### Installation
+# First-time DB setup (run once)
+node src/utils/migrate_payments.js
+node src/utils/fix_status_enum.js
+node src/utils/seed_additional_plans.js
 
-1. **Navigate to backend**
-   ```bash
-   cd backend
-   ```
+# Development
+npm run dev
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up MySQL database**
-   - Create database: `CREATE DATABASE livishield;`
-   - Run `database_schema.sql` in MySQL Workbench
-
-4. **Configure environment**
-   - Update `.env` with your MySQL password
-
-5. **Start server**
-   ```bash
-   npm start
-   ```
-
-## 🗄️ Database Design
-
-### MySQL Table (Authentication)
-- **users**: User accounts, authentication, and profile data
-
-### Sample Data
-- **Admin**: `admin@livishield.com` / `password123`
-- **User**: `john.doe@example.com` / `password123`
-
-## 🔐 Authentication Features
-
-- **JWT-based authentication**
-- **Password hashing** with bcrypt (12 rounds)
-- **Role-based access control** (user, agent, admin)
-- **Input validation** with Joi
-- **Rate limiting** (100 requests/15min)
-- **Security headers** with Helmet
-- **CORS configuration**
-
-## 📊 API Endpoints
-
-### Authentication
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `GET /api/auth/me` - Get current user
-
-### Health Insurance
-- `GET /api/health-insurance/plans` - Get all health insurance plans
-- `GET /api/health-insurance/plans/featured` - Get featured plans
-- `GET /api/health-insurance/plans/:id` - Get plan by ID
-- `POST /api/health-insurance/plans/compare` - Compare multiple plans
-
-### Proposals
-- `POST /api/proposals/submit` - Submit new proposal
-- `GET /api/proposals/user/:userId` - Get user's proposals (paginated)
-- `GET /api/proposals/dashboard/:userId` - Get customer dashboard data
-- `GET /api/proposals/:id` - Get proposal by ID
-- `PUT /api/proposals/:id/status` - Update proposal status (Admin)
-- `GET /api/proposals` - Get all proposals (Admin)
-
-### Health Check
-- `GET /health` - Server health status
-- `GET /health/db` - Database health status
-
-## 🛡️ Security Features
-
-- **Helmet.js** for security headers
-- **CORS** configuration
-- **Rate limiting** (100 requests/15min)
-- **Input validation** with Joi
-- **SQL injection** prevention
-- **XSS protection**
-- **Password hashing** (bcrypt, 12 rounds)
-- **JWT token** authentication
-
-## 📝 Logging
-
-- **Winston** for structured logging
-- **Request/response** logging
-- **Error tracking** with stack traces
-- **File-based** log storage
-
-## 🔧 Development
-
-### Available Scripts
-- `npm start` - Production server
-- `npm run dev` - Development with nodemon
-
-### Testing the Dashboard Endpoint
-1. **Seed test data**:
-   ```bash
-   node src/utils/seedTestProposals.js your-user-id
-   ```
-
-2. **Test the endpoint**:
-   ```bash
-   node test-dashboard-endpoint.js
-   ```
-
-### Environment Variables
-```env
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=your_jwt_secret
-MYSQL_HOST=localhost
-MYSQL_DATABASE=livishield
-MONGODB_URI=mongodb://localhost:27017/livishield_docs
+# Test email
+node src/utils/test_email.js your@email.com
 ```
 
-## 🚀 Frontend Integration
+## Key Endpoints
 
-The system works with the React frontend providing:
-- User registration and login forms
-- JWT token management
-- Protected routes
-- User dashboard
-- Automatic authentication state management
+| Base | Description |
+|---|---|
+| `POST /api/auth/login` | Returns JWT in `Authorization` header |
+| `GET /api/health-insurance/plans` | Filterable, paginated plan catalog |
+| `POST /api/proposals/submit` | Submit a new proposal |
+| `POST /api/proposals/:id/documents` | Upload document file |
+| `POST /api/payments/orders/:proposalId` | Create Razorpay order (incl. 18% GST) |
+| `POST /api/payments/verify` | Verify payment + issue policy |
+| `GET /api/admin/proposals` | Underwriting queue (admin only) |
 
-## 📈 Future Extensions
+See the root `README.md` for the full API reference.
 
-The clean architecture allows easy addition of:
-- Email verification
-- Password reset
-- Two-factor authentication
-- OAuth integration
-- User profile management
-- Admin panel
+## Database Schema
 
----
+### MySQL tables
+- `users` — auth and profile
+- `health_insurance_plans` — 13 plans with JSON features/coverage/exclusions
+- `health_insurance_proposals` — proposals with JSON columns for docs/history
+- `payments` — Razorpay payment records
 
-**Built with ❤️ for LiviShield Authentication System**
+### MongoDB collections
+- `documentauditlogs` — immutable audit trail (upload/verify/reject events)
+
+## Environment
+
+Copy `.env.example` to `.env` and fill in:
+- MySQL credentials
+- JWT secret (min 32 chars)
+- Razorpay test keys
+- Gmail SMTP + App Password
